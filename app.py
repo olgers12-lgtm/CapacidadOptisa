@@ -170,7 +170,7 @@ with col2:
 
 # --- 7. Exportación de resultados ---
 st.header("💾 Exportar análisis")
-st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
+st.download_button("Descargar tabla de capacidad en Excel", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
 with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
