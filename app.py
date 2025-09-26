@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 
 st.set_page_config(page_title="🚀 Dash de Capacidad Línea de Superficies", layout="wide")
-st.title("🦾 Epic Dashboard de Ingeniería - Capacidad Línea de Superficies")
+st.title("🦾 Epic Dashboard - Capacidad Línea de Superficies")
 
 # --- 1. Parámetros editables ---
 st.sidebar.header("🔧 Configuración de Estaciones y Máquinas")
@@ -190,6 +190,6 @@ st.markdown("""
 <div style="text-align:center;">
     <span style="font-size:2em;">🤘</span>
     <br>
-    <span style="font-size:1em;">Hecho por ingenieros, para ingenieros. ¡Haz que tu línea sea legendaria!</span>
+    <span style="font-size:1em;">Hecho por Sebastian Guerrero!</span>
 </div>
 """, unsafe_allow_html=True)
