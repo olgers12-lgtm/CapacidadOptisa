@@ -99,7 +99,7 @@ horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=
 scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
 
 # --- 3. Importación de datos (opcional) ---
-st.sidebar.header("📂 Importa datos reales")
+st.sidebar.header("📂 Importar datos reales")
 uploaded_file = st.sidebar.file_uploader("Carga tu archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
 if uploaded_file:
     df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
@@ -170,7 +170,7 @@ with col2:
 
 # --- 7. Exportación de resultados ---
 st.header("💾 Exporta tu análisis")
-st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
+st.download_button("Descargar tabla de capacidad en Excel", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
 with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
@@ -184,12 +184,12 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
-st.success("🚀 ¡Dashboard épico listo! OEE de la línea aplicado para todos los cálculos.")
+
 
 st.markdown("""
 <div style="text-align:center;">
-    <span style="font-size:2em;">🤘</span>
+    
     <br>
-    <span style="font-size:1em;">Hecho por ingenieros, para ingenieros. ¡Haz que tu línea sea legendaria!</span>
+    <span style="font-size:1em;">Hecho por Ing. Sebastián Guerrero!</span>
 </div>
 """, unsafe_allow_html=True)
