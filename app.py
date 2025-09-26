@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 
 st.set_page_config(page_title="🚀 Dash de Capacidad Línea de Superficies", layout="wide")
-st.title(" Dashboard de Ingeniería - Capacidad Línea de Superficies")
+st.title(" Dashboard - Capacidad Línea de Superficies")
 
 # --- 1. Parámetros editables ---
 st.sidebar.header("🔧 Configuración de Estaciones y Máquinas")
