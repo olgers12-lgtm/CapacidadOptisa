@@ -13,6 +13,7 @@ default_stations = [
     {
         "name": "Encintado",
         "icon": "🟦",
+        "color": "#1f3b6f",         # Azul oscuro
         "machines": [
             {"type": "Encintadora Automática", "count": 1, "capacity": 150, "oee": 0.85}
         ]
@@ -20,6 +21,7 @@ default_stations = [
     {
         "name": "Bloqueo Digital",
         "icon": "🟩",
+        "color": "#27ae60",         # Verde
         "machines": [
             {"type": "PRA", "count": 3, "capacity": 80, "oee": 0.85}
         ]
@@ -27,6 +29,7 @@ default_stations = [
     {
         "name": "Generado Digital",
         "icon": "🟫",
+        "color": "#8d6748",         # Café
         "machines": [
             {"type": "Orbit", "count": 3, "capacity": 77, "oee": 0.85}
         ]
@@ -34,6 +37,7 @@ default_stations = [
     {
         "name": "Laser",
         "icon": "🟨",
+        "color": "#f7e017",         # Amarillo
         "machines": [
             {"type": "Automático", "count": 1, "capacity": 100, "oee": 0.90},
             {"type": "Manual", "count": 1, "capacity": 110, "oee": 0.80}
@@ -42,6 +46,7 @@ default_stations = [
     {
         "name": "Pulido",
         "icon": "🟪",
+        "color": "#7d3fc7",         # Morado
         "machines": [
             {"type": "Duo Flex", "count": 2, "capacity": 30, "oee": 0.80},
             {"type": "DLP", "count": 6, "capacity": 27, "oee": 0.80}
@@ -50,6 +55,7 @@ default_stations = [
     {
         "name": "Desbloqueo",
         "icon": "⬛",
+        "color": "#222222",         # Gris oscuro
         "machines": [
             {"type": "Manual", "count": 1, "capacity": 50, "oee": 0.75},
             {"type": "Desblocker", "count": 1, "capacity": 0, "oee": 0.75}
@@ -58,6 +64,7 @@ default_stations = [
     {
         "name": "Calidad",
         "icon": "⬜",
+        "color": "#eaeaea",         # Gris claro/Blanco
         "machines": [
             {"type": "Foco Vision", "count": 1, "capacity": 0, "oee": 0.90},
             {"type": "Promapper", "count": 1, "capacity": 0, "oee": 0.90}
@@ -83,7 +90,7 @@ for station in default_stations:
             step=0.01, key=f"{station['name']}_{machine['type']}_oee"
         )
         machines.append({"type": machine["type"], "count": count, "capacity": capacity, "oee": oee})
-    stations.append({"name": station["name"], "icon": station["icon"], "machines": machines})
+    stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
 # --- 2. Parámetros de Turnos y Scrap ---
 st.sidebar.header("🕒 Turnos y Scrap")
@@ -106,6 +113,7 @@ for station in stations:
     capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
     station_capacity.append({
         "Estación": f"{station['icon']} {station['name']}",
+        "Color": station["color"],
         "Capacidad hora (teórica)": total_capacity,
         "Capacidad diaria (real)": capacidad_diaria
     })
@@ -116,15 +124,18 @@ df = pd.DataFrame(station_capacity)
 capacidad_linea_diaria = df["Capacidad diaria (real)"].min()
 
 # --- 6. Dashboard visual ---
+bar_colors = df["Color"].tolist()
+bar_names = df["Estación"].tolist()
+
 col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("⚙️ Capacidad por Estación")
     fig = go.Figure(
         go.Bar(
-            x=df["Estación"],
+            x=bar_names,
             y=df["Capacidad hora (teórica)"],
-            marker_color='deepskyblue',
+            marker_color=bar_colors,
             text=np.round(df["Capacidad hora (teórica)"], 1),
             textposition='outside'
         )
@@ -134,9 +145,10 @@ with col1:
     
     fig2 = go.Figure(
         go.Funnel(
-            y=df["Estación"],
+            y=bar_names,
             x=df["Capacidad diaria (real)"],
-            textinfo="value+percent initial"
+            textinfo="value+percent initial",
+            marker={"color": bar_colors}
         )
     )
     fig2.update_layout(title="Flujo y Bottleneck (lentes/día)", funnelmode="stack")
