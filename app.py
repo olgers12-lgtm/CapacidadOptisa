@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 
 st.set_page_config(page_title="🚀 Dash de Capacidad Línea de Superficies", layout="wide")
-st.title("Dashboard - Capacidad Línea de Superficies")
+st.title("🦾 Epic Dashboard de Ingeniería - Capacidad Línea de Superficies")
 
 # --- 1. Parámetros editables ---
 st.sidebar.header("🔧 Configuración de Estaciones y Máquinas")
@@ -13,61 +13,61 @@ default_stations = [
     {
         "name": "Encintado",
         "icon": "🟦",
-        "color": "#1f3b6f",         # Azul oscuro
+        "color": "#1f3b6f",
         "machines": [
-            {"type": "Encintadora Automática", "count": 1, "capacity": 150, "oee": 0.85}
+            {"type": "Encintadora Automática", "count": 1, "capacity": 150}
         ]
     },
     {
         "name": "Bloqueo Digital",
         "icon": "🟩",
-        "color": "#27ae60",         # Verde
+        "color": "#27ae60",
         "machines": [
-            {"type": "PRA", "count": 3, "capacity": 80, "oee": 0.85}
+            {"type": "PRA", "count": 3, "capacity": 80}
         ]
     },
     {
         "name": "Generado Digital",
         "icon": "🟫",
-        "color": "#8d6748",         # Café
+        "color": "#8d6748",
         "machines": [
-            {"type": "Orbit", "count": 3, "capacity": 77, "oee": 0.85}
+            {"type": "Orbit", "count": 3, "capacity": 77}
         ]
     },
     {
         "name": "Laser",
         "icon": "🟨",
-        "color": "#f7e017",         # Amarillo
+        "color": "#f7e017",
         "machines": [
-            {"type": "Automático", "count": 1, "capacity": 100, "oee": 0.90},
-            {"type": "Manual", "count": 1, "capacity": 110, "oee": 0.80}
+            {"type": "Automático", "count": 1, "capacity": 100},
+            {"type": "Manual", "count": 1, "capacity": 110}
         ]
     },
     {
         "name": "Pulido",
         "icon": "🟪",
-        "color": "#7d3fc7",         # Morado
+        "color": "#7d3fc7",
         "machines": [
-            {"type": "Duo Flex", "count": 2, "capacity": 30, "oee": 0.80},
-            {"type": "DLP", "count": 6, "capacity": 27, "oee": 0.80}
+            {"type": "Duo Flex", "count": 2, "capacity": 30},
+            {"type": "DLP", "count": 6, "capacity": 27}
         ]
     },
     {
         "name": "Desbloqueo",
         "icon": "⬛",
-        "color": "#222222",         # Gris oscuro
+        "color": "#222222",
         "machines": [
-            {"type": "Manual", "count": 1, "capacity": 50, "oee": 0.75},
-            {"type": "Desblocker", "count": 1, "capacity": 0, "oee": 0.75}
+            {"type": "Manual", "count": 1, "capacity": 50},
+            {"type": "Desblocker", "count": 1, "capacity": 0}
         ]
     },
     {
         "name": "Calidad",
         "icon": "⬜",
-        "color": "#eaeaea",         # Gris claro/Blanco
+        "color": "#eaeaea",
         "machines": [
-            {"type": "Foco Vision", "count": 1, "capacity": 0, "oee": 0.90},
-            {"type": "Promapper", "count": 1, "capacity": 0, "oee": 0.90}
+            {"type": "Foco Vision", "count": 1, "capacity": 0},
+            {"type": "Promapper", "count": 1, "capacity": 0}
         ]
     }
 ]
@@ -85,12 +85,12 @@ for station in default_stations:
             f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=0, value=machine["capacity"],
             key=f"{station['name']}_{machine['type']}_capacity"
         )
-        oee = st.sidebar.slider(
-            f"{station['name']} - {machine['type']} (OEE)", min_value=0.5, max_value=1.0, value=machine["oee"],
-            step=0.01, key=f"{station['name']}_{machine['type']}_oee"
-        )
-        machines.append({"type": machine["type"], "count": count, "capacity": capacity, "oee": oee})
+        machines.append({"type": machine["type"], "count": count, "capacity": capacity})
     stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
+
+# --- OEE de la línea (¡aquí el cambio!) ---
+st.sidebar.header("📊 Parámetros globales")
+line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
 
 # --- 2. Parámetros de Turnos y Scrap ---
 st.sidebar.header("🕒 Turnos y Scrap")
@@ -99,8 +99,8 @@ horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=
 scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
 
 # --- 3. Importación de datos (opcional) ---
-st.sidebar.header("📂 Importar datos reales")
-uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
+st.sidebar.header("📂 Importa datos reales")
+uploaded_file = st.sidebar.file_uploader("Carga tu archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
 if uploaded_file:
     df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
     st.write("📊 Datos importados:")
@@ -109,7 +109,7 @@ if uploaded_file:
 # --- 4. Cálculo de capacidad por estación ---
 station_capacity = []
 for station in stations:
-    total_capacity = sum([m["count"] * m["capacity"] * m["oee"] for m in station["machines"]])
+    total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
     capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
     station_capacity.append({
         "Estación": f"{station['icon']} {station['name']}",
@@ -169,27 +169,27 @@ with col2:
     st.dataframe(df.drop("Color", axis=1), use_container_width=True)  # Quita la columna de color
 
 # --- 7. Exportación de resultados ---
-st.header("💾 Exportar análisis")
-st.download_button("Descargar tabla de capacidad en Excel", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
+st.header("💾 Exporta tu análisis")
+st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
 with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
-    st.markdown("""
-    - **Capacidad hora (teórica):** ∑ (máquinas × capacidad × OEE) por estación.
+    st.markdown(f"""
+    - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
     - **Cuello de botella:** Estación con menor capacidad diaria.
-    - **OEE:** Eficiencia operacional (Disponibilidad × Rendimiento × Calidad).
-    - **Scrap:** Tasa de rechazo en la línea: Quiebra en el caso de Optisa.
+    - **OEE:** Eficiencia operacional aplicada a toda la línea.
+    - **Scrap:** Tasa de rechazo en la línea.
     - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
-    
+    - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
-
+st.success("🚀 ¡Dashboard épico listo! OEE de la línea aplicado para todos los cálculos.")
 
 st.markdown("""
 <div style="text-align:center;">
-    <span style="font-size:2em;"></span>
+    <span style="font-size:2em;">🤘</span>
     <br>
-    <span style="font-size:1em;">Hecho por Ing.Sebastian Guerrero!</span>
+    <span style="font-size:1em;">Hecho por ingenieros, para ingenieros. ¡Haz que tu línea sea legendaria!</span>
 </div>
 """, unsafe_allow_html=True)
