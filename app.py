@@ -188,9 +188,8 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
 
 st.markdown("""
 <div style="text-align:center;">
-     <span style="font-size:2em;">🤘</span>
-
+    <span style="font-size:2em;"></span>
     <br>
-    <span style="font-size:1em;">Hecho por Ing. Sebastián Guerrero!</span>
+    <span style="font-size:1em;">Hecho por Ing. Sebastián Guerrero</span>
 </div>
 """, unsafe_allow_html=True)
