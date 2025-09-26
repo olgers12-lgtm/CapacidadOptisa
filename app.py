@@ -166,11 +166,11 @@ with col2:
         st.write(f"- {t} turnos: {int(capacidad_scen)} lentes/día")
 
     st.write("📝 **Resumen de parámetros**")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df.drop("Color", axis=1), use_container_width=True)  # Quita la columna de color
 
 # --- 7. Exportación de resultados ---
 st.header("💾 Exporta tu análisis")
-st.download_button("Descargar tabla de capacidad en CSV", data=df.to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
+st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
 with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
@@ -186,7 +186,6 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
 
 st.success("🚀 ¡Dashboard épico listo! Modifica parámetros, simula escenarios, detecta cuellos de botella y exporta tu análisis. ¡Ingeniería industrial nivel dios!")
 
-# --- Easter Egg ---
 st.markdown("""
 <div style="text-align:center;">
     <span style="font-size:2em;">🤘</span>
