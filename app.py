@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 
-# --- Configuración inicial
 st.set_page_config(page_title="🚀 Capacidad AR Dashboard Épico", layout="wide")
 st.title("🦾 Epic Dashboard de Ingeniería - Capacidad Línea de Superficies")
 
