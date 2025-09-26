@@ -184,12 +184,12 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
-st.success("🚀 ¡Dashboard épico listo! Modifica parámetros, simula escenarios, detecta cuellos de botella y exporta tu análisis. ¡Ingeniería industrial nivel dios!")
+st.success("🚀")
 
 st.markdown("""
 <div style="text-align:center;">
-    <span style="font-size:2em;">🤘</span>
+    <span style="font-size:2em;"></span>
     <br>
-    <span style="font-size:1em;">Hecho por Sebastian Guerrero!</span>
+    <span style="font-size:1em;">Hecho por Ing.Sebastian Guerrero!</span>
 </div>
 """, unsafe_allow_html=True)
