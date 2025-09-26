@@ -179,12 +179,12 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
     - **Cuello de botella:** Estación con menor capacidad diaria.
     - **OEE:** Eficiencia operacional (Disponibilidad × Rendimiento × Calidad).
-    - **Scrap:** Tasa de rechazo en la línea.
+    - **Scrap:** Tasa de rechazo en la línea: Quiebra en el caso de Optisa.
     - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
-    - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
+    
     """)
 
-st.success("🚀")
+
 
 st.markdown("""
 <div style="text-align:center;">
