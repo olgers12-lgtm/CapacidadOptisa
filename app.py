@@ -99,7 +99,7 @@ horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=
 scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
 
 # --- 3. Importación de datos (opcional) ---
-st.sidebar.header("📂 Importa datos reales")
+st.sidebar.header("📂 Importar datos reales")
 uploaded_file = st.sidebar.file_uploader("Carga tu archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
 if uploaded_file:
     df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
@@ -169,7 +169,7 @@ with col2:
     st.dataframe(df.drop("Color", axis=1), use_container_width=True)  # Quita la columna de color
 
 # --- 7. Exportación de resultados ---
-st.header("💾 Exporta tu análisis")
+st.header("💾 Exportar análisis")
 st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
