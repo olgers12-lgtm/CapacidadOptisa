@@ -100,7 +100,7 @@ scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2
 
 # --- 3. Importación de datos (opcional) ---
 st.sidebar.header("📂 Importar datos reales")
-uploaded_file = st.sidebar.file_uploader("Carga tu archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
+uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
 if uploaded_file:
     df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
     st.write("📊 Datos importados:")
