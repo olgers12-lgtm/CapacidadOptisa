@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
-import time
 
 st.set_page_config(page_title="🚀 Dash de Capacidad Línea de Superficies", layout="wide")
 st.title("Dashboard - Capacidad Línea de Superficies")
@@ -181,13 +180,12 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
     - **Cuello de botella:** Estación con menor capacidad diaria.
     - **OEE:** Eficiencia operacional aplicada a toda la línea.
-    - **Scrap:** Tasa de rechazo en la línea.
+    - **Scrap:** Tasa de rechazo en la línea.Quiebra
     - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
     - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
-)
-)
+
 
 st.markdown("""
 <div style="text-align:center;">
