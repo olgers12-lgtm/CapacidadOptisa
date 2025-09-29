@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
+import time
 
 st.set_page_config(page_title="🚀 Dash de Capacidad Línea de Superficies", layout="wide")
 st.title("Dashboard - Capacidad Línea de Superficies")
@@ -180,12 +181,47 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
     - **Cuello de botella:** Estación con menor capacidad diaria.
     - **OEE:** Eficiencia operacional aplicada a toda la línea.
-    - **Scrap:** Tasa de rechazo en la línea.Quiebra
+    - **Scrap:** Tasa de rechazo en la línea.
     - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
     - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
+# --- 9. Simulación avanzada estilo FlexSim ---
+st.header("🔬 Simulación avanzada estilo FlexSim para ingeniería industrial")
 
+with st.expander("¡Haz clic para correr una simulación avanzada de flujo de lote por la línea!"):
+    lote_size = st.number_input("Tamaño de lote (piezas)", min_value=1, value=20, key="lote_sim")
+    tiempos_ciclo = []
+    for station in stations:
+        tiempo = st.number_input(
+            f"Tiempo de ciclo en {station['name']} (min/pieza)",
+            min_value=0.1, value=2.0, step=0.1, key=f"tc_{station['name']}"
+        )
+        tiempos_ciclo.append(tiempo)
+
+    if st.button("Simular flujo de lote"):
+        st.info("Simulando avance del lote por la línea...")
+        timeline = []
+        tiempo_actual = 0
+        for idx, station in enumerate(stations):
+            tiempo_estacion = lote_size * tiempos_ciclo[idx]
+            tiempo_actual += tiempo_estacion
+            timeline.append({
+                "Estación": station['name'],
+                "Inicio (min)": tiempo_actual - tiempo_estacion,
+                "Fin (min)": tiempo_actual,
+                "Tiempo en estación (min)": tiempo_estacion
+            })
+            st.write(f"Procesando en {station['icon']} {station['name']}...")
+            st.progress(int((idx + 1)/len(stations)*100))
+            time.sleep(0.4)  # Simula animación
+
+        df_sim = pd.DataFrame(timeline)
+        st.success(f"Tiempo total de proceso del lote: {tiempo_actual} minutos")
+        st.dataframe(df_sim)
+        st.line_chart(
+            pd.DataFrame({"WIP acumulado": [lote_size for _ in stations]}, index=[s['name'] for s in stations])
+        )
 
 st.markdown("""
 <div style="text-align:center;">
