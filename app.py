@@ -174,7 +174,7 @@ st.header("💾 Exportar análisis")
 st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
 # --- 8. Tooltips, Expander y UI Moderna ---
-with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
+with st.expander(" ¿Cómo se calculan los KPIs?"):
     st.markdown(f"""
     - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
@@ -182,7 +182,7 @@ with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     - **OEE:** Eficiencia operacional aplicada a toda la línea.
     - **Scrap:** Tasa de rechazo en la línea.Quiebra
     - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
-    - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
+   
     """)
 
 
