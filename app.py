@@ -13,7 +13,7 @@ default_stations = [
     {
         "name": "Encintado",
         "icon": "🟦",
-        "color": "#1f3b6f",
+        "color": "#1f3b6f",  # Azul oscuro
         "machines": [
             {"type": "Encintadora Automática", "count": 1, "capacity": 150},
             {"type": "Encintado Manual", "count": 1, "capacity": 0}
@@ -89,11 +89,6 @@ for station in default_stations:
         machines.append({"type": machine["type"], "count": count, "capacity": capacity})
     stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
-# --- Parámetro de mix de trabajos ---
-st.sidebar.header("🧮 Mix de trabajos")
-pct_standard = st.sidebar.slider("Porcentaje de trabajos Standard (%)", min_value=0, max_value=100, value=27, step=1)
-pct_free = 100 - pct_standard
-
 # --- OEE de la línea ---
 st.sidebar.header("📊 Parámetros globales")
 line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
@@ -112,104 +107,81 @@ if uploaded_file:
     st.write("📊 Datos importados:")
     st.dataframe(df_input)
 
-# --- 4. Cálculo de capacidad por estación para cada tipo de trabajo ---
-station_capacity_standard = []
-station_capacity_free = []
-
+# --- 4. Cálculo de capacidad por estación ---
+station_capacity = []
 for station in stations:
-    # Standard: Laser se omite (capacidad = 0)
-    if station["name"] == "Laser":
-        total_capacity_standard = 0
-    else:
-        total_capacity_standard = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
-    capacidad_diaria_standard = total_capacity_standard * num_turnos * horas_turno * (1 - scrap_rate)
-    station_capacity_standard.append({
+    total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
+    capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
+    station_capacity.append({
         "Estación": f"{station['icon']} {station['name']}",
         "Color": station["color"],
-        "Capacidad hora (teórica)": total_capacity_standard,
-        "Capacidad diaria (real)": capacidad_diaria_standard
+        "Capacidad hora (teórica)": total_capacity,
+        "Capacidad diaria (real)": capacidad_diaria
     })
 
-    # Free: Laser incluido
-    total_capacity_free = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
-    capacidad_diaria_free = total_capacity_free * num_turnos * horas_turno * (1 - scrap_rate)
-    station_capacity_free.append({
-        "Estación": f"{station['icon']} {station['name']}",
-        "Color": station["color"],
-        "Capacidad hora (teórica)": total_capacity_free,
-        "Capacidad diaria (real)": capacidad_diaria_free
-    })
+df = pd.DataFrame(station_capacity)
 
-df_standard = pd.DataFrame(station_capacity_standard)
-df_free = pd.DataFrame(station_capacity_free)
+# --- 5. Simulación de flujo y acumulación ---
+capacidad_linea_diaria = df["Capacidad diaria (real)"].min()
 
-capacidad_linea_diaria_standard = df_standard["Capacidad diaria (real)"].min()
-capacidad_linea_diaria_free = df_free["Capacidad diaria (real)"].min()
+# --- 6. Dashboard visual ---
+bar_colors = df["Color"].tolist()
+bar_names = df["Estación"].tolist()
 
-# --- 5. Dashboard visual ---
-bar_colors_std = df_standard["Color"].tolist()
-bar_names_std = df_standard["Estación"].tolist()
-bar_colors_free = df_free["Color"].tolist()
-bar_names_free = df_free["Estación"].tolist()
-
-st.subheader("⚙️ Capacidad por Estación - Standard")
-fig_std = go.Figure(
-    go.Bar(
-        x=bar_names_std,
-        y=df_standard["Capacidad hora (teórica)"],
-        marker_color=bar_colors_std,
-        text=np.round(df_standard["Capacidad hora (teórica)"], 1),
-        textposition='outside'
-    )
-)
-fig_std.update_layout(title="Capacidad por Estación STANDARD (lentes/hora)", yaxis_title="Lentes/hora", xaxis_title="Estación")
-st.plotly_chart(fig_std, use_container_width=True)
-
-st.subheader("⚙️ Capacidad por Estación - Free (Digital)")
-fig_free = go.Figure(
-    go.Bar(
-        x=bar_names_free,
-        y=df_free["Capacidad hora (teórica)"],
-        marker_color=bar_colors_free,
-        text=np.round(df_free["Capacidad hora (teórica)"], 1),
-        textposition='outside'
-    )
-)
-fig_free.update_layout(title="Capacidad por Estación FREE/DIGITAL (lentes/hora)", yaxis_title="Lentes/hora", xaxis_title="Estación")
-st.plotly_chart(fig_free, use_container_width=True)
-
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader("📈 KPIs Standard")
-    st.metric("Capacidad diaria Standard", f"{int(capacidad_linea_diaria_standard * pct_standard / 100)} lentes/día")
-    bottleneck_std = df_standard.loc[df_standard["Capacidad diaria (real)"].idxmin()]
-    st.write(f"🔴 **Cuello de botella (Standard):** {bottleneck_std['Estación']} ({int(bottleneck_std['Capacidad diaria (real)'])} lentes/día)")
-    st.write("📝 **Resumen de parámetros Standard**")
-    st.dataframe(df_standard.drop("Color", axis=1), use_container_width=True)
+    st.subheader("⚙️ Capacidad por Estación")
+    fig = go.Figure(
+        go.Bar(
+            x=bar_names,
+            y=df["Capacidad hora (teórica)"],
+            marker_color=bar_colors,
+            text=np.round(df["Capacidad hora (teórica)"], 1),
+            textposition='outside'
+        )
+    )
+    fig.update_layout(title="Capacidad por Estación (lentes/hora)", yaxis_title="Lentes/hora", xaxis_title="Estación")
+    st.plotly_chart(fig, use_container_width=True)
+    
+    fig2 = go.Figure(
+        go.Funnel(
+            y=bar_names,
+            x=df["Capacidad diaria (real)"],
+            textinfo="value+percent initial",
+            marker={"color": bar_colors}
+        )
+    )
+    fig2.update_layout(title="Flujo y Bottleneck (lentes/día)", funnelmode="stack")
+    st.plotly_chart(fig2, use_container_width=True)
 
 with col2:
-    st.subheader("📈 KPIs Free (Digital)")
-    st.metric("Capacidad diaria Free (Digital)", f"{int(capacidad_linea_diaria_free * pct_free / 100)} lentes/día")
-    bottleneck_free = df_free.loc[df_free["Capacidad diaria (real)"].idxmin()]
-    st.write(f"🔴 **Cuello de botella (Free):** {bottleneck_free['Estación']} ({int(bottleneck_free['Capacidad diaria (real)'])} lentes/día)")
-    st.write("📝 **Resumen de parámetros Free (Digital)**")
-    st.dataframe(df_free.drop("Color", axis=1), use_container_width=True)
+    st.subheader("📈 KPIs y Simulación")
+    st.metric("Capacidad diaria de la línea (bottleneck)", f"{int(capacidad_linea_diaria)} lentes/día")
+    bottleneck = df.loc[df["Capacidad diaria (real)"].idxmin()]
+    st.write(f"🔴 **Cuello de botella:** {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)")
 
-# --- 6. Exportación de resultados ---
+    st.write("🕒 **Simulación de reducción de turnos**")
+    for t in range(num_turnos, 0, -1):
+        capacidad_scen = df["Capacidad hora (teórica)"].min() * t * horas_turno * (1-scrap_rate)
+        st.write(f"- {t} turnos: {int(capacidad_scen)} lentes/día")
+
+    st.write("📝 **Resumen de parámetros**")
+    st.dataframe(df.drop("Color", axis=1), use_container_width=True)
+
+# --- 7. Exportación de resultados ---
 st.header("💾 Exportar análisis")
-st.download_button("Descargar tabla Standard en CSV", data=df_standard.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_standard.csv', mime='text/csv')
-st.download_button("Descargar tabla Free (Digital) en CSV", data=df_free.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_free.csv', mime='text/csv')
+st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
-# --- 7. Tooltips, Expander y UI Moderna ---
-with st.expander("¿Cómo se calculan los KPIs?"):
+# --- 8. Tooltips, Expander y UI Moderna ---
+with st.expander("🧐 ¿Cómo se calculan los KPIs?"):
     st.markdown(f"""
-    - Separamos los flujos de trabajos STANDARD y FREE (Digital).
-    - STANDARD: NO pasa por estación Laser.
-    - FREE: pasa por Laser.
     - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
     - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
-    - **Cuello de botella:** Estación con menor capacidad diaria por tipo de trabajo.
+    - **Cuello de botella:** Estación con menor capacidad diaria.
+    - **OEE:** Eficiencia operacional aplicada a toda la línea.
+    - **Scrap:** Tasa de rechazo en la línea.
+    - **Simulación de turnos:** Capacidad de la línea si se reduce el número de turnos.
     - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
     """)
 
