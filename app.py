@@ -15,7 +15,7 @@ default_stations = [
         "icon": "🟦",
         "color": "#1f3b6f",
         "machines": [
-            {"type": "Encintadora Automática", "count": 1, "capacity": 150},
+            {"type": "Encintadora Automática", "count": 1, "capacity": 300},
             {"type": "Encintado Manual", "count": 1, "capacity": 0}
         ]
     },
