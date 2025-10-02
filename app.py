@@ -13,7 +13,7 @@ default_stations = [
     {
         "name": "Encintado",
         "icon": "🟦",
-        "color": "#1f3b6f",  # Azul oscuro
+        "color": "#1f3b6f",
         "machines": [
             {"type": "Encintadora Automática", "count": 1, "capacity": 150},
             {"type": "Encintado Manual", "count": 1, "capacity": 0}
@@ -58,8 +58,8 @@ default_stations = [
         "icon": "⬛",
         "color": "#222222",
         "machines": [
-            {"type": "Manual", "count": 1, "capacity": 50},
-            {"type": "Desblocker", "count": 1, "capacity": 0}
+            {"type": "Manual", "count": 1, "capacity": 423.53},       # 17 seg/caja, 2 lentes/caja
+            {"type": "Desblocker", "count": 1, "capacity": 360}       # 20 seg/caja, 2 lentes/caja
         ]
     },
     {
@@ -67,8 +67,8 @@ default_stations = [
         "icon": "⬜",
         "color": "#eaeaea",
         "machines": [
-            {"type": "Foco Vision", "count": 1, "capacity": 0},
-            {"type": "Promapper", "count": 1, "capacity": 0}
+            {"type": "Foco Vision", "count": 1, "capacity": 60},      # 1 min/lente
+            {"type": "Promapper", "count": 1, "capacity": 110}        # 55 cajas/hora, 2 lentes/caja
         ]
     }
 ]
