@@ -58,7 +58,7 @@ default_stations = [
         "icon": "⬛",
         "color": "#222222",
         "machines": [
-            {"type": "Manual", "count": 1, "capacity": 423.53},       # 17 seg/caja, 2 lentes/caja
+            {"type": "Manual", "count": 1, "capacity": 423},       # 17 seg/caja, 2 lentes/caja
             {"type": "Desblocker", "count": 1, "capacity": 360}       # 20 seg/caja, 2 lentes/caja
         ]
     },
