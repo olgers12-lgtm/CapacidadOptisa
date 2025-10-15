@@ -5,6 +5,7 @@ import time
 import pandas as pd
 
 st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral", layout="wide")
+
 st.markdown("""
 <style>
 h1, h2, h3, h4 { color: #003366; }
@@ -14,72 +15,99 @@ hr { border: 1px solid #003366;}
 </style>
 """, unsafe_allow_html=True)
 
-# Tabs
-tabs = st.tabs([
-    "Capacidad SURF", 
-    "Capacidad E&M", 
-    "Simulación 3D + IA (WOW)"
-])
+# --- 1. Sidebar selector de proceso ---
+proceso = st.sidebar.radio(
+    "Selecciona el dashboard:",
+    ["Capacidad SURF", "Capacidad E&M", "Simulación 3D + IA (WOW)"]
+)
 
-# --------- TAB 1: Capacidad SURF ---------
-with tabs[0]:
-    with st.sidebar:
-        st.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
-        default_stations = [
-            {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f",
-             "machines": [
-                {"type": "Encintadora Automática", "count": 1, "capacity": 150.0},
-                {"type": "Encintado Manual", "count": 1, "capacity": 0.0}]},
-            {"name": "Bloqueo Digital", "icon": "🟩", "color": "#27ae60",
-             "machines": [{"type": "PRA", "count": 3, "capacity": 80.0}]},
-            {"name": "Generado Digital", "icon": "🟫", "color": "#8d6748",
-             "machines": [{"type": "Orbit", "count": 3, "capacity": 77.0}]},
-            {"name": "Laser", "icon": "🟨", "color": "#f7e017",
-             "machines": [
-                {"type": "Automático", "count": 1, "capacity": 100.0},
-                {"type": "Manual", "count": 1, "capacity": 110.0}]},
-            {"name": "Pulido", "icon": "🟪", "color": "#7d3fc7",
-             "machines": [
-                {"type": "Duo Flex", "count": 2, "capacity": 30.0},
-                {"type": "DLP", "count": 6, "capacity": 27.0}]},
-            {"name": "Desbloqueo", "icon": "⬛", "color": "#222222",
-             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 423.53},
-                {"type": "Desblocker", "count": 1, "capacity": 360.0}]},
-            {"name": "Calidad", "icon": "⬜", "color": "#eaeaea",
-             "machines": [
-                {"type": "Foco Vision", "count": 1, "capacity": 60.0},
-                {"type": "Promapper", "count": 1, "capacity": 110.0}]}
-        ]
+# --- 2. Sidebar dinámico ---
+if proceso == "Capacidad SURF":
+    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
+    default_stations = [
+        {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f",
+         "machines": [
+            {"type": "Encintadora Automática", "count": 1, "capacity": 150.0},
+            {"type": "Encintado Manual", "count": 1, "capacity": 0.0}]},
+        {"name": "Bloqueo Digital", "icon": "🟩", "color": "#27ae60",
+         "machines": [{"type": "PRA", "count": 3, "capacity": 80.0}]},
+        {"name": "Generado Digital", "icon": "🟫", "color": "#8d6748",
+         "machines": [{"type": "Orbit", "count": 3, "capacity": 77.0}]},
+        {"name": "Laser", "icon": "🟨", "color": "#f7e017",
+         "machines": [
+            {"type": "Automático", "count": 1, "capacity": 100.0},
+            {"type": "Manual", "count": 1, "capacity": 110.0}]},
+        {"name": "Pulido", "icon": "🟪", "color": "#7d3fc7",
+         "machines": [
+            {"type": "Duo Flex", "count": 2, "capacity": 30.0},
+            {"type": "DLP", "count": 6, "capacity": 27.0}]},
+        {"name": "Desbloqueo", "icon": "⬛", "color": "#222222",
+         "machines": [
+            {"type": "Manual", "count": 1, "capacity": 423.53},
+            {"type": "Desblocker", "count": 1, "capacity": 360.0}]},
+        {"name": "Calidad", "icon": "⬜", "color": "#eaeaea",
+         "machines": [
+            {"type": "Foco Vision", "count": 1, "capacity": 60.0},
+            {"type": "Promapper", "count": 1, "capacity": 110.0}]}
+    ]
+    stations = []
+    for station in default_stations:
+        st.sidebar.subheader(f"{station['icon']} {station['name']}")
+        machines = []
+        for machine in station["machines"]:
+            count = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
+                key=f"SURF_{station['name']}_{machine['type']}_count"
+            )
+            capacity = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=0.0, value=float(machine["capacity"]),
+                key=f"SURF_{station['name']}_{machine['type']}_capacity"
+            )
+            machines.append({"type": machine["type"], "count": count, "capacity": capacity})
+        stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
+    st.sidebar.header("📊 Parámetros globales")
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_SURF")
+    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_SURF")
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_SURF")
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_SURF")
+elif proceso == "Capacidad E&M":
+    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
+    default_stations_em = [
+        {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 12*60.0}]},
+        {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 10*60.0}]},
+        {"name": "Corte", "icon": "✂️", "color": "#27ae60",
+         "machines": [
+            {"type": "Bisphera", "count": 1, "capacity": 109.0},
+            {"type": "ES4", "count": 2, "capacity": 34.0},
+            {"type": "MEI641", "count": 1, "capacity": 74.0}]},
+        {"name": "Remate", "icon": "🟨", "color": "#f4d03f",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 60.0}]}
+    ]
+    stations_em = []
+    for station in default_stations_em:
+        st.sidebar.subheader(f"{station['icon']} {station['name']}")
+        machines = []
+        for machine in station["machines"]:
+            count = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
+                key=f"EM_{station['name']}_{machine['type']}_count"
+            )
+            capacity = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
+                key=f"EM_{station['name']}_{machine['type']}_capacity"
+            )
+            machines.append({"type": machine["type"], "count": count, "capacity": capacity})
+        stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
+    st.sidebar.header("📊 Parámetros globales")
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_EM")
+    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
 
-        stations = []
-        for station in default_stations:
-            st.subheader(f"{station['icon']} {station['name']}")
-            machines = []
-            for machine in station["machines"]:
-                count = st.number_input(
-                    f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
-                    key=f"SURF_{station['name']}_{machine['type']}_count"
-                )
-                capacity = st.number_input(
-                    f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=0.0, value=float(machine["capacity"]),
-                    key=f"SURF_{station['name']}_{machine['type']}_capacity"
-                )
-                machines.append({"type": machine["type"], "count": count, "capacity": capacity})
-            stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
-
-        st.header("📊 Parámetros globales")
-        line_oee = st.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_SURF")
-        num_turnos = st.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_SURF")
-        horas_turno = st.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_SURF")
-        scrap_rate = st.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_SURF")
-        st.header("📂 Importar datos reales")
-        uploaded_file = st.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"], key="file_SURF")
-        if uploaded_file:
-            df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
-            st.write("📊 Datos importados:")
-            st.dataframe(df_input)
-
+# --- 3. Main content area: cambia según proceso ---
+if proceso == "Capacidad SURF":
     st.title("🚀 Dashboard - Capacidad Línea de Superficies")
     station_capacity = []
     for station in stations:
@@ -91,12 +119,10 @@ with tabs[0]:
             "Capacidad hora (teórica)": total_capacity,
             "Capacidad diaria (real)": capacidad_diaria
         })
-
     df = pd.DataFrame(station_capacity)
     capacidad_linea_diaria = df["Capacidad diaria (real)"].min()
     bar_colors = df["Color"].tolist()
     bar_names = df["Estación"].tolist()
-
     col1, col2 = st.columns([2, 1])
     with col1:
         st.subheader("⚙️ Capacidad por Estación")
@@ -148,47 +174,7 @@ with tabs[0]:
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
     """, unsafe_allow_html=True)
-
-# --------- TAB 2: Capacidad E&M ---------
-with tabs[1]:
-    with st.sidebar:
-        st.header("🔧 Configuración de Estaciones y Máquinas E&M")
-        default_stations_em = [
-            {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad",
-             "machines": [{"type": "Manual", "count": 1, "capacity": 12*60.0}]},
-            {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9",
-             "machines": [{"type": "Manual", "count": 1, "capacity": 10*60.0}]},
-            {"name": "Corte", "icon": "✂️", "color": "#27ae60",
-             "machines": [
-                {"type": "Bisphera", "count": 1, "capacity": 109.0},
-                {"type": "ES4", "count": 2, "capacity": 34.0},
-                {"type": "MEI641", "count": 1, "capacity": 74.0}]},
-            {"name": "Remate", "icon": "🟨", "color": "#f4d03f",
-             "machines": [{"type": "Manual", "count": 1, "capacity": 60.0}]}
-        ]
-
-        stations_em = []
-        for station in default_stations_em:
-            st.subheader(f"{station['icon']} {station['name']}")
-            machines = []
-            for machine in station["machines"]:
-                count = st.number_input(
-                    f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
-                    key=f"EM_{station['name']}_{machine['type']}_count"
-                )
-                capacity = st.number_input(
-                    f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
-                    key=f"EM_{station['name']}_{machine['type']}_capacity"
-                )
-                machines.append({"type": machine["type"], "count": count, "capacity": capacity})
-            stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
-
-        st.header("📊 Parámetros globales")
-        line_oee = st.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_EM")
-        num_turnos = st.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
-        horas_turno = st.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
-        scrap_rate = st.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
-
+elif proceso == "Capacidad E&M":
     st.title("🏭 Dashboard - Capacidad Ensamble y Montaje (E&M)")
     station_capacity_em = []
     for station in stations_em:
@@ -204,7 +190,6 @@ with tabs[1]:
     capacidad_linea_diaria_em = df_em["Capacidad diaria (real)"].min()
     bar_colors = df_em["Color"].tolist()
     bar_names = df_em["Estación"].tolist()
-
     col1, col2 = st.columns([2, 1])
     with col1:
         st.subheader("⚙️ Capacidad por Estación")
@@ -256,9 +241,7 @@ with tabs[1]:
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
     """, unsafe_allow_html=True)
-
-# --------- TAB 3: Simulador 3D con IA ---------
-with tabs[2]:
+else:
     st.title("🤖🌐 Simulador 3D Interactivo con IA Industrial")
     st.markdown("""
     Visualiza el flujo de lotes en 3D, identifica cuellos de botella y recibe recomendaciones inteligentes en tiempo real.
