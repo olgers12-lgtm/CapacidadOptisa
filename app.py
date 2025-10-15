@@ -5,13 +5,18 @@ import plotly.graph_objs as go
 
 st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral", layout="wide")
 
-# --- PESTAÑAS PRINCIPALES ---
-tabs = st.tabs(["Capacidad SURF", "Capacidad E&M", "Temporada Alta"])
+# --- 1. Sidebar selector de proceso ---
+proceso = st.sidebar.radio(
+    "Selecciona el dashboard:",
+    ["Capacidad SURF", "Capacidad E&M", "Temporada Alta"]
+)
 
-# --------- TAB 1: Capacidad SURF ---------
-with tabs[0]:
-    st.title("🚀 Dashboard - Capacidad Línea de Superficies")
+# --- 2. Sidebar dinámico ---
+stations = []
+stations_em = []
+line_oee = num_turnos = horas_turno = scrap_rate = None
 
+if proceso == "Capacidad SURF":
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
     default_stations = [
         {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f",
@@ -39,7 +44,6 @@ with tabs[0]:
             {"type": "Foco Vision", "count": 1, "capacity": 60.0},
             {"type": "Promapper", "count": 1, "capacity": 110.0}]}
     ]
-    stations = []
     for station in default_stations:
         st.sidebar.subheader(f"{station['icon']} {station['name']}")
         machines = []
@@ -60,6 +64,49 @@ with tabs[0]:
     horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_SURF")
     scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_SURF")
 
+elif proceso == "Capacidad E&M":
+    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
+    default_stations_em = [
+        {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 12*60.0}]},
+        {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 10*60.0}]},
+        {"name": "Corte", "icon": "✂️", "color": "#27ae60",
+         "machines": [
+            {"type": "Bisphera", "count": 1, "capacity": 109.0},
+            {"type": "ES4", "count": 2, "capacity": 34.0},
+            {"type": "MEI641", "count": 1, "capacity": 74.0}]},
+        {"name": "Remate", "icon": "🟨", "color": "#f4d03f",
+         "machines": [{"type": "Manual", "count": 1, "capacity": 60.0}]}
+    ]
+    for station in default_stations_em:
+        st.sidebar.subheader(f"{station['icon']} {station['name']}")
+        machines = []
+        for machine in station["machines"]:
+            count = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
+                key=f"EM_{station['name']}_{machine['type']}_count"
+            )
+            capacity = st.sidebar.number_input(
+                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
+                key=f"EM_{station['name']}_{machine['type']}_capacity"
+            )
+            machines.append({"type": machine["type"], "count": count, "capacity": capacity})
+        stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
+    st.sidebar.header("📊 Parámetros globales")
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_EM")
+    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
+
+elif proceso == "Temporada Alta":
+    st.sidebar.header("Parámetros de Capacidad (Temporada Alta)")
+    capacidad_surf = st.sidebar.number_input("Capacidad diaria SURF (lentes/día)", min_value=100, value=1200, key="capacidad_surf_ta")
+    capacidad_em = st.sidebar.number_input("Capacidad diaria Montaje (E&M) (lentes/día)", min_value=100, value=1500, key="capacidad_em_ta")
+
+# --- 3. MAIN CONTENT ---
+if proceso == "Capacidad SURF":
+    st.title("🚀 Dashboard - Capacidad Línea de Superficies")
     station_capacity = []
     for station in stations:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
@@ -126,45 +173,8 @@ with tabs[0]:
     </div>
     """, unsafe_allow_html=True)
 
-# --------- TAB 2: Capacidad E&M ---------
-with tabs[1]:
+elif proceso == "Capacidad E&M":
     st.title("🏭 Dashboard - Capacidad Ensamble y Montaje (E&M)")
-
-    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
-    default_stations_em = [
-        {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 12*60.0}]},
-        {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 10*60.0}]},
-        {"name": "Corte", "icon": "✂️", "color": "#27ae60",
-         "machines": [
-            {"type": "Bisphera", "count": 1, "capacity": 109.0},
-            {"type": "ES4", "count": 2, "capacity": 34.0},
-            {"type": "MEI641", "count": 1, "capacity": 74.0}]},
-        {"name": "Remate", "icon": "🟨", "color": "#f4d03f",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 60.0}]}
-    ]
-    stations_em = []
-    for station in default_stations_em:
-        st.sidebar.subheader(f"{station['icon']} {station['name']}")
-        machines = []
-        for machine in station["machines"]:
-            count = st.sidebar.number_input(
-                f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
-                key=f"EM_{station['name']}_{machine['type']}_count"
-            )
-            capacity = st.sidebar.number_input(
-                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
-                key=f"EM_{station['name']}_{machine['type']}_capacity"
-            )
-            machines.append({"type": machine["type"], "count": count, "capacity": capacity})
-        stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
-    st.sidebar.header("📊 Parámetros globales")
-    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_EM")
-    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
-    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
-
     station_capacity_em = []
     for station in stations_em:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
@@ -231,11 +241,9 @@ with tabs[1]:
     </div>
     """, unsafe_allow_html=True)
 
-# --------- TAB 3: Temporada Alta ---------
-with tabs[2]:
+elif proceso == "Temporada Alta":
     st.title("🔝 Temporada Alta - Capacidad y Acumulación de WIP")
 
-    # === ENTRADAS ===
     fechas = [
         "24-nov","25-nov","26-nov","27-nov","28-nov","29-nov","30-nov","1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic",
         "8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic","15-dic","16-dic","17-dic","18-dic","19-dic","20-dic",
@@ -253,7 +261,6 @@ with tabs[2]:
     - Puedes ajustar la capacidad diaria de SURF y Montaje en el panel lateral.
     """)
 
-    st.sidebar.header("Parámetros de Capacidad (Temporada Alta)")
     capacidad_surf = st.sidebar.number_input("Capacidad diaria SURF (lentes/día)", min_value=100, value=1200, key="capacidad_surf_ta")
     capacidad_em = st.sidebar.number_input("Capacidad diaria Montaje (E&M) (lentes/día)", min_value=100, value=1500, key="capacidad_em_ta")
 
