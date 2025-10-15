@@ -206,7 +206,7 @@ elif tab == "Capacidad E&M":
     """, unsafe_allow_html=True)
 
 elif tab == "Temporada Alta":
-    st.title("🔝 Temporada Alta - Capacidad, AR y WIP (Split ajustado)")
+    st.title("🔝 Temporada Alta - Capacidad, AR y WIP (Split parametrizable)")
     fechas = [
         "24-nov","25-nov","26-nov","27-nov","28-nov","29-nov","30-nov","1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic",
         "8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic","15-dic","16-dic","17-dic","18-dic","19-dic","20-dic",
@@ -231,12 +231,15 @@ elif tab == "Temporada Alta":
     turnos_em = st.sidebar.number_input("Turnos Montaje (L-V, Sáb)", 1, 4, 3, key="ta_turnos_em")
     turnos_em_dom = st.sidebar.number_input("Turnos Montaje (Domingo)", 0, 4, 1, key="ta_turnos_em_dom")
 
-    # Split ajustado
-    pct_directo_montaje = 0.25
-    pct_surf = 0.75
-    pct_surf_ar_no_montaje = 0.02
-    pct_surf_ar_montaje = 0.90
-    pct_surf_montaje_no_ar = 1.0 - pct_surf_ar_no_montaje - pct_surf_ar_montaje  # 0.08
+    st.sidebar.header("Split de flujos después de SURF (total debe sumar 100%)")
+    pct_surf_ar_no_montaje = st.sidebar.slider("% de SURF → AR (NO pasa a Montaje)", 0, 100, 2, key="ta_pct_ar_no_montaje")
+    pct_surf_ar_montaje = st.sidebar.slider("% de SURF → AR y luego a Montaje", 0, 100, 90, key="ta_pct_ar_montaje")
+    pct_surf_montaje_no_ar = 100 - pct_surf_ar_no_montaje - pct_surf_ar_montaje
+    st.sidebar.markdown(f"**% de SURF → Montaje (sin AR):** {pct_surf_montaje_no_ar}%")
+    # Convertir a proporciones
+    pct_surf_ar_no_montaje /= 100
+    pct_surf_ar_montaje /= 100
+    pct_surf_montaje_no_ar /= 100
 
     year_ref = 2024 if "nov" in fechas[0] else datetime.datetime.now().year
     month_map = {"nov":11, "dic":12}
@@ -265,6 +268,8 @@ elif tab == "Temporada Alta":
     ]
 
     # Flujos
+    pct_directo_montaje = 0.25
+    pct_surf = 0.75
     df["Lente_terminado"] = df["Entrada_total"] * pct_directo_montaje
     df["Lente_surf"] = df["Entrada_total"] * pct_surf
 
@@ -294,19 +299,19 @@ elif tab == "Temporada Alta":
     st.markdown("""
     **Supuestos**:  
     - 25% de la entrada es Lente Terminado y va directo a Montaje.  
-    - 75% pasa por SURF:
-        - 2% de los de SURF → AR (y no van a Montaje)
-        - 90% de los de SURF → AR y luego Montaje
-        - 8% de los de SURF → Montaje directo (sin AR)
+    - 75% pasa por SURF, luego split configurable:
+        - % a AR solamente (NO Montaje)
+        - % a AR y luego Montaje
+        - % directo a Montaje (sin AR)
     """)
 
-    st.subheader("Entradas y acumulación de WIP en Temporada Alta (Split ajustado)")
+    st.subheader("Entradas y acumulación de WIP en Temporada Alta (Split parametrizable)")
     st.dataframe(df, use_container_width=True)
 
     fig = go.Figure()
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Entrada_total"], name="Entradas totales/día", marker_color="#1f77b4"))
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_terminado"], name="Lente Terminado (directo a Montaje)", marker_color="#2ca02c"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_ar_no_montaje"], name="Solo AR", marker_color="#ff7f0e"))
+    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_ar_no_montaje"], name="Solo AR (NO Montaje)", marker_color="#ff7f0e"))
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_ar_montaje"], name="AR→Montaje", marker_color="#6c3483"))
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_montaje_no_ar"], name="Montaje sin AR", marker_color="#f7e017"))
     fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_SURF"], name="WIP SURF", mode="lines+markers", line=dict(color="red", width=3)))
