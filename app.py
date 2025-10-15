@@ -2,7 +2,6 @@ import streamlit as st
 import plotly.graph_objs as go
 import numpy as np
 import pandas as pd
-import time
 
 st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral", layout="wide")
 
@@ -18,7 +17,7 @@ hr { border: 1px solid #003366;}
 # --- 1. Sidebar selector de proceso ---
 proceso = st.sidebar.radio(
     "Selecciona el dashboard:",
-    ["Capacidad SURF", "Capacidad E&M", "Simulación 3D + IA (WOW)"]
+    ["Capacidad SURF", "Capacidad E&M"]
 )
 
 # --- 2. Sidebar dinámico ---
@@ -239,77 +238,5 @@ elif proceso == "Capacidad E&M":
         <span style="font-size:2em;">👨‍💼</span>
         <br>
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-else:
-    st.title("🤖🌐 Simulador 3D Interactivo con IA Industrial")
-    st.markdown("""
-    Visualiza el flujo de lotes en 3D, identifica cuellos de botella y recibe recomendaciones inteligentes en tiempo real.
-    """)
-    lote_size = st.number_input("Tamaño de lote (lentes)", min_value=1, value=20, key="lote3d")
-    velocidad = st.slider("Velocidad de simulación (segundos/estación)", min_value=0.1, max_value=2.0, value=0.5, step=0.1, key="vel3d")
-    stations_full = [
-        {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f", "coord": [0, 0, 0]},
-        {"name": "Bloqueo Digital", "icon": "🟩", "color": "#27ae60", "coord": [1, 0, 0]},
-        {"name": "Generado Digital", "icon": "🟫", "color": "#8d6748", "coord": [2, 0.5, 0]},
-        {"name": "Laser", "icon": "🟨", "color": "#f7e017", "coord": [3, 1.5, 0]},
-        {"name": "Pulido", "icon": "🟪", "color": "#7d3fc7", "coord": [4, 1, 0]},
-        {"name": "Desbloqueo", "icon": "⬛", "color": "#222222", "coord": [5, 0.5, 0]},
-        {"name": "Calidad", "icon": "⬜", "color": "#eaeaea", "coord": [6, 0, 0]}
-    ]
-    coords = np.array([s["coord"] for s in stations_full])
-    labels = [s["name"] for s in stations_full]
-    icons = [s["icon"] for s in stations_full]
-    colors = [s["color"] for s in stations_full]
-    run_sim = st.button("Simular flujo 3D con IA")
-    def ia_bottleneck(stations):
-        capacidades = np.random.randint(60, 200, len(stations))
-        idx = np.argmin(capacidades)
-        return stations[idx]["name"], capacidades[idx], capacidades
-    if run_sim:
-        st.subheader("🔵 Flujo total (todas las estaciones)")
-        bottle, cap, caps = ia_bottleneck(stations_full)
-        st.info(f"🧠 IA: Bottleneck: {bottle} ({cap} lentes/hora aprox.)")
-        for paso in range(len(stations_full)):
-            fig = go.Figure()
-            fig.add_trace(go.Scatter3d(
-                x=coords[:,0], y=coords[:,1], z=coords[:,2],
-                mode="markers+text",
-                marker=dict(
-                    size=[30 if i==paso else 18 for i in range(len(stations_full))],
-                    color=["red" if i==paso or stations_full[i]["name"]==bottle else colors[i] for i in range(len(stations_full))],
-                    opacity=0.9  # use scalar here, NOT a list!
-                ),
-                text=[f"{icons[i]}<br>{labels[i]}<br>{caps[i]} l/h" for i in range(len(stations_full))],
-                textposition="bottom center"
-            ))
-            if paso > 0:
-                fig.add_trace(go.Scatter3d(
-                    x=coords[:paso+1,0], y=coords[:paso+1,1], z=coords[:paso+1,2],
-                    mode="lines",
-                    line=dict(color="red", width=8)
-                ))
-            fig.update_layout(
-                margin=dict(l=0, r=0, b=0, t=0),
-                scene=dict(
-                    xaxis=dict(visible=False),
-                    yaxis=dict(visible=False),
-                    zaxis=dict(visible=False),
-                ),
-                title=f"Lote en {labels[paso]}",
-                showlegend=False,
-                height=420
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            time.sleep(velocidad)
-        st.success(f"Simulación terminada para {lote_size} lentes (flujo total)")
-        st.markdown("## 💡 Recomendaciones Inteligentes")
-        st.info(f"💡 **Sugerencia IA:** Refuerza la estación '{bottle}' para mejorar el throughput global.")
-    st.markdown("""
-    <div style="text-align:center;">
-        <span style="font-size:2em;">🤖</span>
-        <br>
-        <span style="font-size:1em;">Simulación 3D con IA generativa y análisis de cuellos de botella - ¡Impacto industrial asegurado!</span>
     </div>
     """, unsafe_allow_html=True)
