@@ -97,11 +97,11 @@ with tabs[0]:
         for machine in station["machines"]:
             count = st.sidebar.number_input(
                 f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
-                key=f"{station['name']}_{machine['type']}_count"
+                key=f"SURF_{station['name']}_{machine['type']}_count"
             )
             capacity = st.sidebar.number_input(
                 f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=0.0, value=float(machine["capacity"]),
-                key=f"{station['name']}_{machine['type']}_capacity"
+                key=f"SURF_{station['name']}_{machine['type']}_capacity"
             )
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
@@ -260,11 +260,11 @@ with tabs[1]:
         for machine in station["machines"]:
             count = st.sidebar.number_input(
                 f"{station['name']} - {machine['type']} (Cantidad)", min_value=1, value=machine["count"],
-                key=f"E&M_{station['name']}_{machine['type']}_count"
+                key=f"EM_{station['name']}_{machine['type']}_count"
             )
             capacity = st.sidebar.number_input(
                 f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
-                key=f"E&M_{station['name']}_{machine['type']}_capacity"
+                key=f"EM_{station['name']}_{machine['type']}_capacity"
             )
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
