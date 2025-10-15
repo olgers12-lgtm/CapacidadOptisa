@@ -1,8 +1,8 @@
 import streamlit as st
 import plotly.graph_objs as go
 import numpy as np
-import time
 import pandas as pd
+import time
 
 st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral", layout="wide")
 
@@ -241,6 +241,7 @@ elif proceso == "Capacidad E&M":
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
     """, unsafe_allow_html=True)
+
 else:
     st.title("🤖🌐 Simulador 3D Interactivo con IA Industrial")
     st.markdown("""
@@ -278,7 +279,7 @@ else:
                 marker=dict(
                     size=[30 if i==paso else 18 for i in range(len(stations_full))],
                     color=["red" if i==paso or stations_full[i]["name"]==bottle else colors[i] for i in range(len(stations_full))],
-                    opacity=[0.9 if i==paso else 0.5 for i in range(len(stations_full))]
+                    opacity=0.9  # use scalar here, NOT a list!
                 ),
                 text=[f"{icons[i]}<br>{labels[i]}<br>{caps[i]} l/h" for i in range(len(stations_full))],
                 textposition="bottom center"
