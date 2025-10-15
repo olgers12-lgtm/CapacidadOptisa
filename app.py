@@ -247,92 +247,160 @@ elif proceso == "Capacidad E&M":
     """, unsafe_allow_html=True)
 
 elif proceso == "Temporada Alta":
-    st.title("🔝 Temporada Alta - Capacidad y Acumulación de WIP")
+  st.title("🔝 Temporada Alta - Capacidad, AR y WIP con Turnos/Horas variables")
 
-    fechas = [
-        "24-nov","25-nov","26-nov","27-nov","28-nov","29-nov","30-nov","1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic",
-        "8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic","15-dic","16-dic","17-dic","18-dic","19-dic","20-dic",
-        "21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
-    ]
-    entradas = [
-        677, 642, 600, 572, 602, 738, 246, 1459, 1383, 1293, 1233, 1297, 1592, 530, 730, 692, 647, 617, 649, 796, 265, 686,
-        650, 607, 579, 609, 748, 249, 498, 471, 441, 421, 442, 543, 181
-    ]
+# === ENTRADAS ===
+fechas = [
+    "24-nov","25-nov","26-nov","27-nov","28-nov","29-nov","30-nov","1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic",
+    "8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic","15-dic","16-dic","17-dic","18-dic","19-dic","20-dic",
+    "21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
+]
+entradas = [
+    677, 642, 600, 572, 602, 738, 246, 1459, 1383, 1293, 1233, 1297, 1592, 530, 730, 692, 647, 617, 649, 796, 265, 686,
+    650, 607, 579, 609, 748, 249, 498, 471, 441, 421, 442, 543, 181
+]
 
-    st.markdown("""
-    **Supuestos**:  
-    - 25% de lo que entra es Lente Terminado y va directo a Montaje.  
-    - 75% pasa primero por SURF y luego a Montaje.  
-    - Puedes ajustar la capacidad diaria de SURF, AR y Montaje en el panel lateral.
-    - Puedes ajustar el % de trabajos de SURF que van a AR o directo a Montaje.
-    """)
+# === SIDEBAR: Parámetros de capacidad base ===
+st.sidebar.header("Capacidad base y OEE")
+# SURF
+capacidad_surf_h = st.sidebar.number_input("Capacidad base SURF (lentes/hora)", min_value=10, value=150, key="surf_h")
+oee_surf = st.sidebar.slider("OEE SURF", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="oee_surf")
+# AR
+capacidad_ar_h = st.sidebar.number_input("Capacidad base AR (lentes/hora)", min_value=10, value=140, key="ar_h")
+oee_ar = st.sidebar.slider("OEE AR", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="oee_ar")
+# E&M
+capacidad_em_h = st.sidebar.number_input("Capacidad base Montaje (lentes/hora)", min_value=10, value=180, key="em_h")
+oee_em = st.sidebar.slider("OEE Montaje", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="oee_em")
 
-    # Ya definidos en el sidebar arriba
-    # capacidad_surf, capacidad_ar, capacidad_em, pct_ar, pct_sin_ar
+st.sidebar.markdown("---")
+st.sidebar.header("Turnos y horas por día (no domingo)")
+turnos_surf = st.sidebar.number_input("Turnos SURF", 1, 4, 3, key="turnos_surf") 
+horas_surf = st.sidebar.number_input("Horas por turno SURF", 4, 12, 8, key="horas_surf")
+turnos_ar = st.sidebar.number_input("Turnos AR", 1, 4, 3, key="turnos_ar")
+horas_ar = st.sidebar.number_input("Horas por turno AR", 4, 12, 8, key="horas_ar")
+turnos_em = st.sidebar.number_input("Turnos Montaje", 1, 4, 3, key="turnos_em")
+horas_em = st.sidebar.number_input("Horas por turno Montaje", 4, 12, 8, key="horas_em")
 
-    df = pd.DataFrame({
-        "Fecha": fechas,
-        "Entrada_total": entradas
-    })
-    df["Lente_terminado"] = df["Entrada_total"] * 0.25
-    df["Lente_surf"] = df["Entrada_total"] * 0.75
+st.sidebar.markdown("---")
+st.sidebar.header("Turnos y horas para DOMINGO")
+turnos_dom_surf = st.sidebar.number_input("Turnos SURF (domingo)", 0, 4, 1, key="turnos_dom_surf")
+horas_dom_surf = st.sidebar.number_input("Horas por turno SURF (domingo)", 0, 12, 6, key="horas_dom_surf")
+turnos_dom_ar = st.sidebar.number_input("Turnos AR (domingo)", 0, 4, 1, key="turnos_dom_ar")
+horas_dom_ar = st.sidebar.number_input("Horas por turno AR (domingo)", 0, 12, 6, key="horas_dom_ar")
+turnos_dom_em = st.sidebar.number_input("Turnos Montaje (domingo)", 0, 4, 1, key="turnos_dom_em")
+horas_dom_em = st.sidebar.number_input("Horas por turno Montaje (domingo)", 0, 12, 6, key="horas_dom_em")
 
-    df["Lente_AR"] = df["Lente_surf"] * (pct_ar / 100)
-    df["Lente_sin_AR"] = df["Lente_surf"] * (pct_sin_ar / 100)
+st.sidebar.markdown("---")
+st.sidebar.header("Split de flujos después de SURF")
+pct_ar = st.sidebar.slider("% de trabajos de SURF que van a AR", min_value=0, max_value=100, value=80, step=1, key="pct_ar_TA")
+pct_sin_ar = 100 - pct_ar
 
-    df["Salida_SURF_AR"] = np.minimum(df["Lente_AR"], capacidad_surf * (pct_ar/100))
-    df["Salida_SURF_Sin_AR"] = np.minimum(df["Lente_sin_AR"], capacidad_surf * (pct_sin_ar/100))
-    df["Salida_SURF_Total"] = df["Salida_SURF_AR"] + df["Salida_SURF_Sin_AR"]
-    df["WIP_SURF"] = (df["Lente_AR"] + df["Lente_sin_AR"] - df["Salida_SURF_Total"]).cumsum()
+# ==== Construir DataFrame con fechas reales ====
+year_ref = 2024 if "nov" in fechas[0] else datetime.datetime.now().year
+month_map = {"nov":11, "dic":12}
+date_objs = []
+for f in fechas:
+    dia, mes = f.split("-")
+    date_obj = datetime.date(year_ref, month_map[mes], int(dia))
+    date_objs.append(date_obj)
 
-    df["Entrada_AR"] = df["Salida_SURF_AR"]
-    df["Salida_AR"] = np.minimum(df["Entrada_AR"], capacidad_ar)
-    df["WIP_AR"] = (df["Entrada_AR"] - df["Salida_AR"]).cumsum()
+df = pd.DataFrame({
+    "Fecha": fechas,
+    "Fecha_real": date_objs,
+    "Entrada_total": entradas
+})
 
-    df["Entrada_EM"] = df["Lente_terminado"] + df["Salida_AR"] + df["Salida_SURF_Sin_AR"]
-    df["Salida_EM"] = np.minimum(df["Entrada_EM"], capacidad_em)
-    df["WIP_EM"] = (df["Entrada_EM"] - df["Salida_EM"]).cumsum()
+# ==== Determina para cada día si es domingo ====
+df["Es_domingo"] = [d.weekday()==6 for d in df["Fecha_real"]]
 
-    st.subheader("Entradas y acumulación de WIP en Temporada Alta (con AR)")
-    st.dataframe(df, use_container_width=True)
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Entrada_total"], name="Entradas totales/día", marker_color="#1f77b4"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_terminado"], name="Lente Terminado (directo a Montaje)", marker_color="#2ca02c"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_AR"], name="Lentes a AR", marker_color="#ff7f0e"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_sin_AR"], name="Lentes directos a Montaje", marker_color="#f7e017"))
-    fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_SURF"], name="WIP SURF", mode="lines+markers", line=dict(color="red", width=3)))
-    fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_AR"], name="WIP AR", mode="lines+markers", line=dict(color="blue", width=3)))
-    fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_EM"], name="WIP Montaje", mode="lines+markers", line=dict(color="purple", width=3)))
-    fig.update_layout(
-        barmode='stack',
-        title="Carga diaria y acumulación de WIP (SURF - AR - Montaje)",
-        xaxis_title="Fecha",
-        yaxis_title="Lentes",
-        height=600
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-    max_wip_surf = int(df["WIP_SURF"].max())
-    max_wip_ar = int(df["WIP_AR"].max())
-    max_wip_em = int(df["WIP_EM"].max())
-    st.info(f"🔴 Máximo WIP acumulado en SURF: **{max_wip_surf} lentes**")
-    st.info(f"🔵 Máximo WIP acumulado en AR: **{max_wip_ar} lentes**")
-    st.info(f"🟣 Máximo WIP acumulado en Montaje: **{max_wip_em} lentes**")
-    if max_wip_surf > 0 or max_wip_ar > 0 or max_wip_em > 0:
-        st.warning("⚠️ Para evitar acumulación de WIP, considera aumentar capacidad diaria, turnos, horas o recursos en los procesos cuello de botella durante la temporada alta.")
+# ==== Calcula capacidad diaria dinámica según día ====
+def capacidad_diaria(is_dom, base_h, oee, turnos, horas, turnos_dom, horas_dom):
+    if is_dom:
+        return base_h * oee * turnos_dom * horas_dom
     else:
-        st.success("✔️ La capacidad actual es suficiente para cubrir la demanda de temporada alta sin acumulación significativa de WIP.")
+        return base_h * oee * turnos * horas
 
-    demanda_max_surf = df["Lente_AR"].max() + df["Lente_sin_AR"].max()
-    demanda_max_ar = df["Entrada_AR"].max()
-    demanda_max_em = df["Entrada_EM"].max()
-    st.markdown(f"""
-    **Demanda máxima diaria a SURF:** {int(demanda_max_surf)} lentes  
-    **Demanda máxima diaria a AR:** {int(demanda_max_ar)} lentes  
-    **Demanda máxima diaria a Montaje:** {int(demanda_max_em)} lentes  
-    """)
-    st.markdown("**Simula capacidad necesaria para NO acumular WIP:**")
-    st.write(f"🔸 Para cubrir el pico en SURF necesitas al menos **{int(np.ceil(demanda_max_surf/capacidad_surf))} veces la capacidad diaria actual**")
-    st.write(f"🔸 Para cubrir el pico en AR necesitas al menos **{int(np.ceil(demanda_max_ar/capacidad_ar))} veces la capacidad diaria actual**")
-    st.write(f"🔸 Para cubrir el pico en Montaje necesitas al menos **{int(np.ceil(demanda_max_em/capacidad_em))} veces la capacidad diaria actual**")
+df["Capacidad_SURF"] = [
+    capacidad_diaria(row["Es_domingo"], capacidad_surf_h, oee_surf, turnos_surf, horas_surf, turnos_dom_surf, horas_dom_surf)
+    for idx, row in df.iterrows()
+]
+df["Capacidad_AR"] = [
+    capacidad_diaria(row["Es_domingo"], capacidad_ar_h, oee_ar, turnos_ar, horas_ar, turnos_dom_ar, horas_dom_ar)
+    for idx, row in df.iterrows()
+]
+df["Capacidad_EM"] = [
+    capacidad_diaria(row["Es_domingo"], capacidad_em_h, oee_em, turnos_em, horas_em, turnos_dom_em, horas_dom_em)
+    for idx, row in df.iterrows()
+]
+
+# ==== Flujo de producción ====
+df["Lente_terminado"] = df["Entrada_total"] * 0.25
+df["Lente_surf"] = df["Entrada_total"] * 0.75
+df["Lente_AR"] = df["Lente_surf"] * (pct_ar / 100)
+df["Lente_sin_AR"] = df["Lente_surf"] * (pct_sin_ar / 100)
+
+# Cada proceso está limitado por SU capacidad diaria real (por día)
+df["Salida_SURF_AR"] = np.minimum(df["Lente_AR"], df["Capacidad_SURF"] * (pct_ar/100))
+df["Salida_SURF_Sin_AR"] = np.minimum(df["Lente_sin_AR"], df["Capacidad_SURF"] * (pct_sin_ar/100))
+df["Salida_SURF_Total"] = df["Salida_SURF_AR"] + df["Salida_SURF_Sin_AR"]
+df["WIP_SURF"] = (df["Lente_AR"] + df["Lente_sin_AR"] - df["Salida_SURF_Total"]).cumsum()
+
+df["Entrada_AR"] = df["Salida_SURF_AR"]
+df["Salida_AR"] = np.minimum(df["Entrada_AR"], df["Capacidad_AR"])
+df["WIP_AR"] = (df["Entrada_AR"] - df["Salida_AR"]).cumsum()
+
+df["Entrada_EM"] = df["Lente_terminado"] + df["Salida_AR"] + df["Salida_SURF_Sin_AR"]
+df["Salida_EM"] = np.minimum(df["Entrada_EM"], df["Capacidad_EM"])
+df["WIP_EM"] = (df["Entrada_EM"] - df["Salida_EM"]).cumsum()
+
+st.markdown("""
+**Supuestos**:  
+- 25% de lo que entra es Lente Terminado y va directo a Montaje.  
+- 75% pasa primero por SURF y luego a AR o directo a Montaje según el split.  
+- Puedes ajustar los turnos, horas, OEE y split, y la simulación se actualiza.  
+- Los domingos puedes poner menos turnos/horas o incluso cero para simular paros.
+""")
+
+st.subheader("Entradas y acumulación de WIP en Temporada Alta (con AR y turnos/horas variables)")
+st.dataframe(df, use_container_width=True)
+
+fig = go.Figure()
+fig.add_trace(go.Bar(x=df["Fecha"], y=df["Entrada_total"], name="Entradas totales/día", marker_color="#1f77b4"))
+fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_terminado"], name="Lente Terminado (directo a Montaje)", marker_color="#2ca02c"))
+fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_AR"], name="Lentes a AR", marker_color="#ff7f0e"))
+fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_sin_AR"], name="Lentes directos a Montaje", marker_color="#f7e017"))
+fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_SURF"], name="WIP SURF", mode="lines+markers", line=dict(color="red", width=3)))
+fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_AR"], name="WIP AR", mode="lines+markers", line=dict(color="blue", width=3)))
+fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_EM"], name="WIP Montaje", mode="lines+markers", line=dict(color="purple", width=3)))
+fig.update_layout(
+    barmode='stack',
+    title="Carga diaria y acumulación de WIP (SURF - AR - Montaje)",
+    xaxis_title="Fecha",
+    yaxis_title="Lentes",
+    height=600
+)
+st.plotly_chart(fig, use_container_width=True)
+
+max_wip_surf = int(df["WIP_SURF"].max())
+max_wip_ar = int(df["WIP_AR"].max())
+max_wip_em = int(df["WIP_EM"].max())
+st.info(f"🔴 Máximo WIP acumulado en SURF: **{max_wip_surf} lentes**")
+st.info(f"🔵 Máximo WIP acumulado en AR: **{max_wip_ar} lentes**")
+st.info(f"🟣 Máximo WIP acumulado en Montaje: **{max_wip_em} lentes**")
+if max_wip_surf > 0 or max_wip_ar > 0 or max_wip_em > 0:
+    st.warning("⚠️ Para evitar acumulación de WIP, considera aumentar capacidad diaria, turnos, horas o recursos en los procesos cuello de botella durante la temporada alta.")
+else:
+    st.success("✔️ La capacidad actual es suficiente para cubrir la demanda de temporada alta sin acumulación significativa de WIP.")
+
+demanda_max_surf = df["Lente_AR"].max() + df["Lente_sin_AR"].max()
+demanda_max_ar = df["Entrada_AR"].max()
+demanda_max_em = df["Entrada_EM"].max()
+st.markdown(f"""
+**Demanda máxima diaria a SURF:** {int(demanda_max_surf)} lentes  
+**Demanda máxima diaria a AR:** {int(demanda_max_ar)} lentes  
+**Demanda máxima diaria a Montaje:** {int(demanda_max_em)} lentes  
+""")
+st.markdown("**Simula capacidad necesaria para NO acumular WIP:**")
+st.write(f"🔸 Para cubrir el pico en SURF necesitas al menos **{int(np.ceil(demanda_max_surf/df['Capacidad_SURF'].max()))} veces la capacidad diaria máxima configurada**")
+st.write(f"🔸 Para cubrir el pico en AR necesitas al menos **{int(np.ceil(demanda_max_ar/df['Capacidad_AR'].max()))} veces la capacidad diaria máxima configurada**")
+st.write(f"🔸 Para cubrir el pico en Montaje necesitas al menos **{int(np.ceil(demanda_max_em/df['Capacidad_EM'].max()))} veces la capacidad diaria máxima configurada**")
