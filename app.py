@@ -18,28 +18,28 @@ if tab == "Capacidad SURF":
     default_stations = [
         {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f",
          "machines": [
-            {"type": "Encintadora Automática", "count": 1, "capacity": 150.0},
-            {"type": "Encintado Manual", "count": 1, "capacity": 0.0}]},
+            {"type": "Encintadora Automática", "count": 1, "capacity": 952},
+            {"type": "Encintado Manual", "count": 1, "capacity": 0}]},
         {"name": "Bloqueo Digital", "icon": "🟩", "color": "#27ae60",
-         "machines": [{"type": "PRA", "count": 3, "capacity": 80.0}]},
+         "machines": [{"type": "PRA", "count": 3, "capacity": 952}]},
         {"name": "Generado Digital", "icon": "🟫", "color": "#8d6748",
-         "machines": [{"type": "Orbit", "count": 3, "capacity": 77.0}]},
+         "machines": [{"type": "Orbit", "count": 3, "capacity": 952}]},
         {"name": "Laser", "icon": "🟨", "color": "#f7e017",
          "machines": [
-            {"type": "Automático", "count": 1, "capacity": 100.0},
-            {"type": "Manual", "count": 1, "capacity": 110.0}]},
+            {"type": "Automático", "count": 1, "capacity": 952},
+            {"type": "Manual", "count": 1, "capacity": 952}]},
         {"name": "Pulido", "icon": "🟪", "color": "#7d3fc7",
          "machines": [
-            {"type": "Duo Flex", "count": 2, "capacity": 30.0},
-            {"type": "DLP", "count": 6, "capacity": 27.0}]},
+            {"type": "Duo Flex", "count": 2, "capacity": 952},
+            {"type": "DLP", "count": 6, "capacity": 952}]},
         {"name": "Desbloqueo", "icon": "⬛", "color": "#222222",
          "machines": [
-            {"type": "Manual", "count": 1, "capacity": 423.53},
-            {"type": "Desblocker", "count": 1, "capacity": 360.0}]},
+            {"type": "Manual", "count": 1, "capacity": 952},
+            {"type": "Desblocker", "count": 1, "capacity": 952}]},
         {"name": "Calidad", "icon": "⬜", "color": "#eaeaea",
          "machines": [
-            {"type": "Foco Vision", "count": 1, "capacity": 60.0},
-            {"type": "Promapper", "count": 1, "capacity": 110.0}]}
+            {"type": "Foco Vision", "count": 1, "capacity": 952},
+            {"type": "Promapper", "count": 1, "capacity": 952}]}
     ]
     stations = []
     for station in default_stations:
@@ -51,24 +51,23 @@ if tab == "Capacidad SURF":
                 key=f"SURF_{station['name']}_{machine['type']}_count"
             )
             capacity = st.sidebar.number_input(
-                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=0.0, value=float(machine["capacity"]),
+                f"{station['name']} - {machine['type']} (Capacidad lentes/turno)", min_value=0.0, value=float(machine["capacity"]),
                 key=f"SURF_{station['name']}_{machine['type']}_capacity"
             )
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
     st.sidebar.header("📊 Parámetros globales")
     num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_SURF")
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_SURF")
     scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_SURF")
 
     station_capacity = []
     for station in stations:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]])
-        capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
+        capacidad_diaria = total_capacity * num_turnos * (1 - scrap_rate)
         station_capacity.append({
             "Estación": f"{station['icon']} {station['name']}",
             "Color": station["color"],
-            "Capacidad hora (teórica)": total_capacity,
+            "Capacidad turno (teórica)": total_capacity,
             "Capacidad diaria (real)": capacidad_diaria
         })
     df = pd.DataFrame(station_capacity)
@@ -81,13 +80,13 @@ if tab == "Capacidad SURF":
         fig = go.Figure(
             go.Bar(
                 x=bar_names,
-                y=df["Capacidad hora (teórica)"],
+                y=df["Capacidad turno (teórica)"],
                 marker_color=bar_colors,
-                text=np.round(df["Capacidad hora (teórica)"], 1),
+                text=np.round(df["Capacidad turno (teórica)"], 1),
                 textposition='outside'
             )
         )
-        fig.update_layout(title="Capacidad por Estación (lentes/hora)", yaxis_title="Lentes/hora", xaxis_title="Estación")
+        fig.update_layout(title="Capacidad por Estación (lentes/turno)", yaxis_title="Lentes/turno", xaxis_title="Estación")
         st.plotly_chart(fig, use_container_width=True)
         fig2 = go.Figure(
             go.Funnel(
@@ -104,10 +103,6 @@ if tab == "Capacidad SURF":
         st.markdown(f"<div class='big-metric'>Capacidad diaria (bottleneck): {int(capacidad_linea_diaria)} lentes/día</div>", unsafe_allow_html=True)
         bottleneck = df.loc[df["Capacidad diaria (real)"].idxmin()]
         st.markdown(f"<div class='metric-info'>🔴 <b>Cuello de botella:</b> {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)</div>", unsafe_allow_html=True)
-        st.write("🕒 **Simulación de reducción de turnos**")
-        for t in range(num_turnos, 0, -1):
-            capacidad_scen = df["Capacidad hora (teórica)"].min() * t * horas_turno * (1-scrap_rate)
-            st.write(f"- {t} turnos: {int(capacidad_scen)} lentes/día")
         st.write("📝 **Resumen de parámetros**")
         st.dataframe(df.drop("Color", axis=1), use_container_width=True)
     st.header("💾 Exportar análisis")
@@ -125,16 +120,16 @@ elif tab == "Capacidad E&M":
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
     default_stations_em = [
         {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 12*60.0}]},
+         "machines": [{"type": "Manual", "count": 1, "capacity": 1071}]},
         {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 10*60.0}]},
+         "machines": [{"type": "Manual", "count": 1, "capacity": 1071}]},
         {"name": "Corte", "icon": "✂️", "color": "#27ae60",
          "machines": [
-            {"type": "Bisphera", "count": 1, "capacity": 109.0},
-            {"type": "ES4", "count": 2, "capacity": 34.0},
-            {"type": "MEI641", "count": 1, "capacity": 74.0}]},
+            {"type": "Bisphera", "count": 1, "capacity": 1071},
+            {"type": "ES4", "count": 2, "capacity": 1071},
+            {"type": "MEI641", "count": 1, "capacity": 1071}]},
         {"name": "Remate", "icon": "🟨", "color": "#f4d03f",
-         "machines": [{"type": "Manual", "count": 1, "capacity": 60.0}]}
+         "machines": [{"type": "Manual", "count": 1, "capacity": 1071}]}
     ]
     stations_em = []
     for station in default_stations_em:
@@ -146,24 +141,23 @@ elif tab == "Capacidad E&M":
                 key=f"EM_{station['name']}_{machine['type']}_count"
             )
             capacity = st.sidebar.number_input(
-                f"{station['name']} - {machine['type']} (Capacidad lentes/hora)", min_value=1.0, value=float(machine["capacity"]),
+                f"{station['name']} - {machine['type']} (Capacidad lentes/turno)", min_value=1.0, value=float(machine["capacity"]),
                 key=f"EM_{station['name']}_{machine['type']}_capacity"
             )
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
     st.sidebar.header("📊 Parámetros globales")
     num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
     scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
 
     station_capacity_em = []
     for station in stations_em:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]])
-        capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
+        capacidad_diaria = total_capacity * num_turnos * (1 - scrap_rate)
         station_capacity_em.append({
             "Estación": f"{station['icon']} {station['name']}",
             "Color": station["color"],
-            "Capacidad hora (teórica)": total_capacity,
+            "Capacidad turno (teórica)": total_capacity,
             "Capacidad diaria (real)": capacidad_diaria
         })
     df_em = pd.DataFrame(station_capacity_em)
@@ -176,13 +170,13 @@ elif tab == "Capacidad E&M":
         fig = go.Figure(
             go.Bar(
                 x=bar_names,
-                y=df_em["Capacidad hora (teórica)"],
+                y=df_em["Capacidad turno (teórica)"],
                 marker_color=bar_colors,
-                text=np.round(df_em["Capacidad hora (teórica)"], 1),
+                text=np.round(df_em["Capacidad turno (teórica)"], 1),
                 textposition='outside'
             )
         )
-        fig.update_layout(title="Capacidad por Estación (lentes/hora)", yaxis_title="Lentes/hora", xaxis_title="Estación")
+        fig.update_layout(title="Capacidad por Estación (lentes/turno)", yaxis_title="Lentes/turno", xaxis_title="Estación")
         st.plotly_chart(fig, use_container_width=True)
         fig2 = go.Figure(
             go.Funnel(
@@ -199,10 +193,6 @@ elif tab == "Capacidad E&M":
         st.markdown(f"<div class='big-metric'>Capacidad diaria (bottleneck): {int(capacidad_linea_diaria_em)} lentes/día</div>", unsafe_allow_html=True)
         bottleneck = df_em.loc[df_em["Capacidad diaria (real)"].idxmin()]
         st.markdown(f"<div class='metric-info'>🔴 <b>Cuello de botella:</b> {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)</div>", unsafe_allow_html=True)
-        st.write("🕒 **Simulación de reducción de turnos**")
-        for t in range(num_turnos, 0, -1):
-            capacidad_scen = df_em["Capacidad hora (teórica)"].min() * t * horas_turno * (1-scrap_rate)
-            st.write(f"- {t} turnos: {int(capacidad_scen)} lentes/día")
         st.write("📝 **Resumen de parámetros**")
         st.dataframe(df_em.drop("Color", axis=1), use_container_width=True)
     st.header("💾 Exportar análisis")
@@ -227,25 +217,19 @@ elif tab == "Temporada Alta":
         650, 607, 579, 609, 748, 249, 498, 471, 441, 421, 442, 543, 181
     ]
 
-    st.sidebar.header("Capacidad, turnos y horas por área")
+    st.sidebar.header("Capacidad, turnos por área (por turno, no por hora)")
     st.sidebar.subheader("SURF")
-    capacidad_surf = st.sidebar.number_input("Capacidad base SURF (lentes/hora)", min_value=1, value=150, key="ta_csurf")
+    capacidad_surf = st.sidebar.number_input("Capacidad base SURF (lentes/turno)", min_value=1, value=952, key="ta_csurf")
     turnos_surf = st.sidebar.number_input("Turnos SURF (L-V, Sáb)", 1, 4, 3, key="ta_turnos_surf")
-    horas_surf = st.sidebar.number_input("Horas por turno SURF (L-V, Sáb)", 1, 12, 8, key="ta_horas_surf")
     turnos_surf_dom = st.sidebar.number_input("Turnos SURF (Domingo)", 0, 4, 1, key="ta_turnos_surf_dom")
-    horas_surf_dom = st.sidebar.number_input("Horas por turno SURF (Domingo)", 0, 12, 6, key="ta_horas_surf_dom")
     st.sidebar.subheader("AR")
-    capacidad_ar = st.sidebar.number_input("Capacidad base AR (lentes/hora)", min_value=1, value=140, key="ta_car")
+    capacidad_ar = st.sidebar.number_input("Capacidad base AR (lentes/turno)", min_value=1, value=560, key="ta_car")
     turnos_ar = st.sidebar.number_input("Turnos AR (L-V, Sáb)", 1, 4, 3, key="ta_turnos_ar")
-    horas_ar = st.sidebar.number_input("Horas por turno AR (L-V, Sáb)", 1, 12, 8, key="ta_horas_ar")
     turnos_ar_dom = st.sidebar.number_input("Turnos AR (Domingo)", 0, 4, 1, key="ta_turnos_ar_dom")
-    horas_ar_dom = st.sidebar.number_input("Horas por turno AR (Domingo)", 0, 12, 6, key="ta_horas_ar_dom")
     st.sidebar.subheader("Montaje (E&M)")
-    capacidad_em = st.sidebar.number_input("Capacidad base Montaje (lentes/hora)", min_value=1, value=180, key="ta_cem")
+    capacidad_em = st.sidebar.number_input("Capacidad base Montaje (lentes/turno)", min_value=1, value=1071, key="ta_cem")
     turnos_em = st.sidebar.number_input("Turnos Montaje (L-V, Sáb)", 1, 4, 3, key="ta_turnos_em")
-    horas_em = st.sidebar.number_input("Horas por turno Montaje (L-V, Sáb)", 1, 12, 8, key="ta_horas_em")
     turnos_em_dom = st.sidebar.number_input("Turnos Montaje (Domingo)", 0, 4, 1, key="ta_turnos_em_dom")
-    horas_em_dom = st.sidebar.number_input("Horas por turno Montaje (Domingo)", 0, 12, 6, key="ta_horas_em_dom")
     st.sidebar.markdown("---")
     st.sidebar.header("Split de flujos después de SURF")
     pct_ar = st.sidebar.slider("% de trabajos de SURF que van a AR", min_value=0, max_value=100, value=80, step=1, key="ta_pct_ar")
@@ -265,15 +249,15 @@ elif tab == "Temporada Alta":
     })
     df["Es_domingo"] = [d.weekday()==6 for d in df["Fecha_real"]]
     df["Capacidad_SURF"] = [
-        capacidad_surf * (turnos_surf_dom if row["Es_domingo"] else turnos_surf) * (horas_surf_dom if row["Es_domingo"] else horas_surf)
+        capacidad_surf * (turnos_surf_dom if row["Es_domingo"] else turnos_surf)
         for idx, row in df.iterrows()
     ]
     df["Capacidad_AR"] = [
-        capacidad_ar * (turnos_ar_dom if row["Es_domingo"] else turnos_ar) * (horas_ar_dom if row["Es_domingo"] else horas_ar)
+        capacidad_ar * (turnos_ar_dom if row["Es_domingo"] else turnos_ar)
         for idx, row in df.iterrows()
     ]
     df["Capacidad_EM"] = [
-        capacidad_em * (turnos_em_dom if row["Es_domingo"] else turnos_em) * (horas_em_dom if row["Es_domingo"] else horas_em)
+        capacidad_em * (turnos_em_dom if row["Es_domingo"] else turnos_em)
         for idx, row in df.iterrows()
     ]
 
@@ -299,7 +283,7 @@ elif tab == "Temporada Alta":
     **Supuestos**:  
     - 25% de lo que entra es Lente Terminado y va directo a Montaje.  
     - 75% pasa primero por SURF y luego a AR o directo a Montaje según el split.  
-    - Puedes ajustar la capacidad base, turnos y horas para cada área y para domingos.  
+    - Puedes ajustar la capacidad base, turnos para cada área y para domingos.  
     - El dashboard calcula la capacidad diaria automáticamente.
     """)
 
@@ -330,7 +314,7 @@ elif tab == "Temporada Alta":
     st.info(f"🔵 Máximo WIP acumulado en AR: **{max_wip_ar} lentes**")
     st.info(f"🟣 Máximo WIP acumulado en Montaje: **{max_wip_em} lentes**")
     if max_wip_surf > 0 or max_wip_ar > 0 or max_wip_em > 0:
-        st.warning("⚠️ Para evitar acumulación de WIP, considera aumentar capacidad, turnos, horas o recursos en los procesos cuello de botella durante la temporada alta.")
+        st.warning("⚠️ Para evitar acumulación de WIP, considera aumentar capacidad, turnos o recursos en los procesos cuello de botella durante la temporada alta.")
     else:
         st.success("✔️ La capacidad actual es suficiente para cubrir la demanda de temporada alta sin acumulación significativa de WIP.")
 
