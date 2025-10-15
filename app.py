@@ -202,7 +202,7 @@ if option == "SURF (Superficies)":
 
     st.markdown("""
     <div style="text-align:center;">
-        <span style="font-size:2em;">👨‍💼</span>
+       
         <br>
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
@@ -219,7 +219,7 @@ elif option == "E&M (Ensamble y Montaje)":
             "icon": "🔲",
             "color": "#8e44ad",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 12*60.0}  # 12 lentes/min = 720/h
+                {"type": "Manual", "count": 1, "capacity": 10*60.0}  # 12 lentes/min = 720/h
             ]
         },
         {
@@ -227,7 +227,7 @@ elif option == "E&M (Ensamble y Montaje)":
             "icon": "🟦",
             "color": "#2980b9",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 10*60.0}  # 10 lentes/min = 600/h
+                {"type": "Manual", "count": 1, "capacity": 8*60.0}  # 10 lentes/min = 600/h
             ]
         },
         {
