@@ -206,7 +206,7 @@ elif tab == "Capacidad E&M":
     """, unsafe_allow_html=True)
 
 elif tab == "Temporada Alta":
-    st.title("🔝 Temporada Alta - Capacidad, AR y WIP (Capacidad general por área, turnos y domingos)")
+    st.title("🔝 Temporada Alta - Capacidad, AR y WIP (Split ajustado)")
     fechas = [
         "24-nov","25-nov","26-nov","27-nov","28-nov","29-nov","30-nov","1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic",
         "8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic","15-dic","16-dic","17-dic","18-dic","19-dic","20-dic",
@@ -230,10 +230,13 @@ elif tab == "Temporada Alta":
     capacidad_em = st.sidebar.number_input("Capacidad base Montaje (lentes/turno)", min_value=1, value=1071, key="ta_cem")
     turnos_em = st.sidebar.number_input("Turnos Montaje (L-V, Sáb)", 1, 4, 3, key="ta_turnos_em")
     turnos_em_dom = st.sidebar.number_input("Turnos Montaje (Domingo)", 0, 4, 1, key="ta_turnos_em_dom")
-    st.sidebar.markdown("---")
-    st.sidebar.header("Split de flujos después de SURF")
-    pct_ar = st.sidebar.slider("% de trabajos de SURF que van a AR", min_value=0, max_value=100, value=80, step=1, key="ta_pct_ar")
-    pct_sin_ar = 100 - pct_ar
+
+    # Split ajustado
+    pct_directo_montaje = 0.25
+    pct_surf = 0.75
+    pct_surf_ar_no_montaje = 0.02
+    pct_surf_ar_montaje = 0.90
+    pct_surf_montaje_no_ar = 1.0 - pct_surf_ar_no_montaje - pct_surf_ar_montaje  # 0.08
 
     year_ref = 2024 if "nov" in fechas[0] else datetime.datetime.now().year
     month_map = {"nov":11, "dic":12}
@@ -261,40 +264,51 @@ elif tab == "Temporada Alta":
         for idx, row in df.iterrows()
     ]
 
-    df["Lente_terminado"] = df["Entrada_total"] * 0.25
-    df["Lente_surf"] = df["Entrada_total"] * 0.75
-    df["Lente_AR"] = df["Lente_surf"] * (pct_ar / 100)
-    df["Lente_sin_AR"] = df["Lente_surf"] * (pct_sin_ar / 100)
+    # Flujos
+    df["Lente_terminado"] = df["Entrada_total"] * pct_directo_montaje
+    df["Lente_surf"] = df["Entrada_total"] * pct_surf
 
-    df["Salida_SURF_AR"] = np.minimum(df["Lente_AR"], df["Capacidad_SURF"] * (pct_ar/100))
-    df["Salida_SURF_Sin_AR"] = np.minimum(df["Lente_sin_AR"], df["Capacidad_SURF"] * (pct_sin_ar/100))
-    df["Salida_SURF_Total"] = df["Salida_SURF_AR"] + df["Salida_SURF_Sin_AR"]
-    df["WIP_SURF"] = (df["Lente_AR"] + df["Lente_sin_AR"] - df["Salida_SURF_Total"]).cumsum()
+    df["Lente_surf_ar_no_montaje"] = df["Lente_surf"] * pct_surf_ar_no_montaje
+    df["Lente_surf_ar_montaje"] = df["Lente_surf"] * pct_surf_ar_montaje
+    df["Lente_surf_montaje_no_ar"] = df["Lente_surf"] * pct_surf_montaje_no_ar
 
-    df["Entrada_AR"] = df["Salida_SURF_AR"]
-    df["Salida_AR"] = np.minimum(df["Entrada_AR"], df["Capacidad_AR"])
-    df["WIP_AR"] = (df["Entrada_AR"] - df["Salida_AR"]).cumsum()
+    # SURF
+    df["Salida_SURF_AR_no_montaje"] = np.minimum(df["Lente_surf_ar_no_montaje"], df["Capacidad_SURF"] * pct_surf_ar_no_montaje)
+    df["Salida_SURF_AR_montaje"] = np.minimum(df["Lente_surf_ar_montaje"], df["Capacidad_SURF"] * pct_surf_ar_montaje)
+    df["Salida_SURF_Montaje_no_ar"] = np.minimum(df["Lente_surf_montaje_no_ar"], df["Capacidad_SURF"] * pct_surf_montaje_no_ar)
+    df["Salida_SURF_Total"] = df["Salida_SURF_AR_no_montaje"] + df["Salida_SURF_AR_montaje"] + df["Salida_SURF_Montaje_no_ar"]
+    df["WIP_SURF"] = (df["Lente_surf_ar_no_montaje"] + df["Lente_surf_ar_montaje"] + df["Lente_surf_montaje_no_ar"] - df["Salida_SURF_Total"]).cumsum()
 
-    df["Entrada_EM"] = df["Lente_terminado"] + df["Salida_AR"] + df["Salida_SURF_Sin_AR"]
+    # AR
+    df["Entrada_AR"] = df["Salida_SURF_AR_no_montaje"] + df["Salida_SURF_AR_montaje"]
+    df["Salida_AR_no_montaje"] = np.minimum(df["Salida_SURF_AR_no_montaje"], df["Capacidad_AR"] * pct_surf_ar_no_montaje)
+    df["Salida_AR_montaje"] = np.minimum(df["Salida_SURF_AR_montaje"], df["Capacidad_AR"] * pct_surf_ar_montaje)
+    df["Salida_AR_Total"] = df["Salida_AR_no_montaje"] + df["Salida_AR_montaje"]
+    df["WIP_AR"] = (df["Entrada_AR"] - df["Salida_AR_Total"]).cumsum()
+
+    # Montaje
+    df["Entrada_EM"] = df["Lente_terminado"] + df["Salida_AR_montaje"] + df["Salida_SURF_Montaje_no_ar"]
     df["Salida_EM"] = np.minimum(df["Entrada_EM"], df["Capacidad_EM"])
     df["WIP_EM"] = (df["Entrada_EM"] - df["Salida_EM"]).cumsum()
 
     st.markdown("""
     **Supuestos**:  
-    - 25% de lo que entra es Lente Terminado y va directo a Montaje.  
-    - 75% pasa primero por SURF y luego a AR o directo a Montaje según el split.  
-    - Puedes ajustar la capacidad base, turnos para cada área y para domingos.  
-    - El dashboard calcula la capacidad diaria automáticamente.
+    - 25% de la entrada es Lente Terminado y va directo a Montaje.  
+    - 75% pasa por SURF:
+        - 2% de los de SURF → AR (y no van a Montaje)
+        - 90% de los de SURF → AR y luego Montaje
+        - 8% de los de SURF → Montaje directo (sin AR)
     """)
 
-    st.subheader("Entradas y acumulación de WIP en Temporada Alta (con AR, turnos y domingos)")
+    st.subheader("Entradas y acumulación de WIP en Temporada Alta (Split ajustado)")
     st.dataframe(df, use_container_width=True)
 
     fig = go.Figure()
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Entrada_total"], name="Entradas totales/día", marker_color="#1f77b4"))
     fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_terminado"], name="Lente Terminado (directo a Montaje)", marker_color="#2ca02c"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_AR"], name="Lentes a AR", marker_color="#ff7f0e"))
-    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_sin_AR"], name="Lentes directos a Montaje", marker_color="#f7e017"))
+    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_ar_no_montaje"], name="Solo AR", marker_color="#ff7f0e"))
+    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_ar_montaje"], name="AR→Montaje", marker_color="#6c3483"))
+    fig.add_trace(go.Bar(x=df["Fecha"], y=df["Lente_surf_montaje_no_ar"], name="Montaje sin AR", marker_color="#f7e017"))
     fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_SURF"], name="WIP SURF", mode="lines+markers", line=dict(color="red", width=3)))
     fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_AR"], name="WIP AR", mode="lines+markers", line=dict(color="blue", width=3)))
     fig.add_trace(go.Scatter(x=df["Fecha"], y=df["WIP_EM"], name="WIP Montaje", mode="lines+markers", line=dict(color="purple", width=3)))
@@ -318,7 +332,7 @@ elif tab == "Temporada Alta":
     else:
         st.success("✔️ La capacidad actual es suficiente para cubrir la demanda de temporada alta sin acumulación significativa de WIP.")
 
-    demanda_max_surf = df["Lente_AR"].max() + df["Lente_sin_AR"].max()
+    demanda_max_surf = df["Lente_surf_ar_no_montaje"].max() + df["Lente_surf_ar_montaje"].max() + df["Lente_surf_montaje_no_ar"].max()
     demanda_max_ar = df["Entrada_AR"].max()
     demanda_max_em = df["Entrada_EM"].max()
     st.markdown(f"""
