@@ -108,20 +108,20 @@ with tabs[0]:
 
     # --- Parámetro de mix de trabajos ---
     st.sidebar.header("🧮 Mix de trabajos")
-    pct_standard = st.sidebar.slider("Porcentaje de trabajos Standard (%)", min_value=0, max_value=100, value=27, step=1)
+    pct_standard = st.sidebar.slider("Porcentaje de trabajos Standard (%)", min_value=0, max_value=100, value=27, step=1, key="pct_standard_surf")
     pct_free = 100 - pct_standard
     pct_free_frac = pct_free / 100
 
     # --- OEE de la línea ---
     st.sidebar.header("📊 Parámetros globales")
-    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
-    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3)
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8)
-    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_SURF")
+    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_SURF")
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_SURF")
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_SURF")
 
     # --- 3. Importación de datos (opcional) ---
     st.sidebar.header("📂 Importar datos reales")
-    uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
+    uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"], key="file_SURF")
     if uploaded_file:
         df_input = pd.read_excel(uploaded_file) if uploaded_file.name.endswith("xlsx") else pd.read_csv(uploaded_file)
         st.write("📊 Datos importados:")
@@ -270,10 +270,10 @@ with tabs[1]:
         stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
     st.sidebar.header("📊 Parámetros globales")
-    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
-    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3)
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8)
-    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01, key="OEE_EM")
+    num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3, key="turnos_EM")
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8, key="horas_EM")
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01, key="scrap_EM")
 
     station_capacity_em = []
     for station in stations_em:
@@ -358,9 +358,9 @@ with tabs[2]:
     Visualiza el flujo de lotes en 3D, identifica cuellos de botella y recibe recomendaciones inteligentes en tiempo real.
     """)
     
-    lote_size = st.number_input("Tamaño de lote (lentes)", min_value=1, value=20)
-    velocidad = st.slider("Velocidad de simulación (segundos/estación)", min_value=0.1, max_value=2.0, value=0.5, step=0.1)
-    pct_standard = st.slider("Porcentaje de trabajos Standard (%)", min_value=0, max_value=100, value=27)
+    lote_size = st.number_input("Tamaño de lote (lentes)", min_value=1, value=20, key="lote3d")
+    velocidad = st.slider("Velocidad de simulación (segundos/estación)", min_value=0.1, max_value=2.0, value=0.5, step=0.1, key="vel3d")
+    pct_standard = st.slider("Porcentaje de trabajos Standard (%)", min_value=0, max_value=100, value=27, key="pctstd3d")
     pct_free = 100 - pct_standard
 
     stations_full = [
