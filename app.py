@@ -3,22 +3,35 @@ import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
 
-st.set_page_config(page_title="🚀 Dashboard de Capacidad", layout="wide")
+st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral", layout="wide")
 st.markdown("""
 <style>
 h1, h2, h3, h4 { color: #003366; }
 .big-metric { font-size: 2em; font-weight: bold; color: #1f77b4;}
+.metric-info { font-size: 1.2em; color: #222; }
+hr { border: 1px solid #003366;}
 </style>
 """, unsafe_allow_html=True)
 
-# --------- BOTÓN/TAB para elegir proceso ----------
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3103/3103474.png", width=80)
-option = st.sidebar.radio("Selecciona el proceso:", ("SURF (Superficies)", "E&M (Ensamble y Montaje)"))
+# --------- TABS/TOP BUTTONS ---------
+colA, colB = st.columns(2)
+with colA:
+    st.image("https://cdn-icons-png.flaticon.com/512/3103/3103474.png", width=70)
+with colB:
+    st.markdown("<h1 style='margin-top:10px;'>Dashboard de Capacidad Integral</h1>", unsafe_allow_html=True)
 
-if option == "SURF (Superficies)":
-    st.title("🚀 Dashboard - Capacidad Línea de Superficies")
+tab = st.radio(
+    "Selecciona el proceso:", 
+    options=["SURF (Superficies)", "E&M (Ensamble y Montaje)"], 
+    horizontal=True
+)
+
+if tab == "SURF (Superficies)":
+    st.markdown("---")
+    st.markdown("## 🚀 Superficies - Capacidad, Bottleneck y Simulación Industrial")
+
     # --- 1. Parámetros editables ---
-    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas")
+    st.sidebar.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
     default_stations = [
         {
             "name": "Encintado",
@@ -143,6 +156,7 @@ if option == "SURF (Superficies)":
     bar_colors = df["Color"].tolist()
     bar_names = df["Estación"].tolist()
 
+    st.markdown("### 🔍 Visualización de Capacidad y Bottleneck")
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -172,9 +186,9 @@ if option == "SURF (Superficies)":
 
     with col2:
         st.subheader("📈 KPIs y Simulación")
-        st.markdown(f"<div class='big-metric'>Capacidad diaria de la línea (bottleneck): {int(capacidad_linea_diaria)} lentes/día</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='big-metric'>Cap. diaria (bottleneck): {int(capacidad_linea_diaria)} lentes/día</div>", unsafe_allow_html=True)
         bottleneck = df.loc[df["Capacidad diaria (real)"].idxmin()]
-        st.write(f"🔴 **Cuello de botella:** {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)")
+        st.markdown(f"<div class='metric-info'>🔴 <b>Cuello de botella:</b> {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)</div>", unsafe_allow_html=True)
 
         st.write("🕒 **Simulación de reducción de turnos**")
         for t in range(num_turnos, 0, -1):
@@ -184,6 +198,7 @@ if option == "SURF (Superficies)":
         st.write("📝 **Resumen de parámetros**")
         st.dataframe(df.drop("Color", axis=1), use_container_width=True)
 
+    st.markdown("---")
     # --- 7. Exportación de resultados ---
     st.header("💾 Exportar análisis")
     st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
@@ -195,21 +210,20 @@ if option == "SURF (Superficies)":
         - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
         - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
         - **Cuello de botella:** Estación con menor capacidad diaria.
-        - **OEE:** Eficiencia operacional aplicada a toda la línea.
-        - **Scrap:** Tasa de rechazo en la línea.
         - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
         """)
 
     st.markdown("""
     <div style="text-align:center;">
-       
+        <span style="font-size:2em;">👨‍💼</span>
         <br>
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
     """, unsafe_allow_html=True)
 
-elif option == "E&M (Ensamble y Montaje)":
-    st.title("⚙️ Dashboard - Capacidad Montaje (E&M)")
+elif tab == "E&M (Ensamble y Montaje)":
+    st.markdown("---")
+    st.markdown("## 🏭 Ensamble y Montaje - Capacidad, Bottleneck y Simulación Industrial")
 
     # --- 1. Parámetros editables para E&M ---
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
@@ -219,7 +233,7 @@ elif option == "E&M (Ensamble y Montaje)":
             "icon": "🔲",
             "color": "#8e44ad",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 10*60.0}  # 12 lentes/min = 720/h
+                {"type": "Manual", "count": 1, "capacity": 12*60.0}  # 12 lentes/min = 720/h
             ]
         },
         {
@@ -227,7 +241,7 @@ elif option == "E&M (Ensamble y Montaje)":
             "icon": "🟦",
             "color": "#2980b9",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 8*60.0}  # 10 lentes/min = 600/h
+                {"type": "Manual", "count": 1, "capacity": 10*60.0}  # 10 lentes/min = 600/h
             ]
         },
         {
@@ -291,6 +305,7 @@ elif option == "E&M (Ensamble y Montaje)":
     bar_colors = df_em["Color"].tolist()
     bar_names = df_em["Estación"].tolist()
 
+    st.markdown("### 🔍 Visualización de Capacidad y Bottleneck")
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -320,9 +335,9 @@ elif option == "E&M (Ensamble y Montaje)":
 
     with col2:
         st.subheader("📈 KPIs y Simulación")
-        st.markdown(f"<div class='big-metric'>Capacidad diaria de la línea (bottleneck): {int(capacidad_linea_diaria_em)} lentes/día</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='big-metric'>Cap. diaria (bottleneck): {int(capacidad_linea_diaria_em)} lentes/día</div>", unsafe_allow_html=True)
         bottleneck = df_em.loc[df_em["Capacidad diaria (real)"].idxmin()]
-        st.write(f"🔴 **Cuello de botella:** {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)")
+        st.markdown(f"<div class='metric-info'>🔴 <b>Cuello de botella:</b> {bottleneck['Estación']} ({int(bottleneck['Capacidad diaria (real)'])} lentes/día)</div>", unsafe_allow_html=True)
 
         st.write("🕒 **Simulación de reducción de turnos**")
         for t in range(num_turnos, 0, -1):
@@ -332,6 +347,7 @@ elif option == "E&M (Ensamble y Montaje)":
         st.write("📝 **Resumen de parámetros**")
         st.dataframe(df_em.drop("Color", axis=1), use_container_width=True)
 
+    st.markdown("---")
     # --- 5. Exporta resultados ---
     st.header("💾 Exportar análisis")
     st.download_button("Descargar tabla de capacidad en CSV", data=df_em.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_em.csv', mime='text/csv')
