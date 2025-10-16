@@ -250,15 +250,21 @@ elif tab == "Temporada Alta":
     turnos_em_dom = st.sidebar.number_input("Turnos Montaje (Domingo)", 0, 4, 1, key="ta_turnos_em_dom")
     wip_inicial_em = st.sidebar.number_input(f"WIP inicial Montaje ({unidades})", min_value=0, value=1100 if unidades=="Jobs (pares de lentes)" else 2200, key="ta_wip_inicial_em")
 
-    # Entradas por flujo
-    pct_directo_montaje = 0.25
-    pct_surf = 0.75
+    # Mes en español a inglés para parsear fechas
+    MES_MAP = {
+        "ene": "Jan", "feb": "Feb", "mar": "Mar", "abr": "Apr", "may": "May", "jun": "Jun",
+        "jul": "Jul", "ago": "Aug", "sep": "Sep", "oct": "Oct", "nov": "Nov", "dic": "Dec"
+    }
+    def fecha_a_dt(fecha):
+        dia, mes, año = fecha.split('-')
+        mes_en = MES_MAP[mes.lower()]
+        return datetime.datetime.strptime(f"{dia}-{mes_en}-{año}", "%d-%b-%Y")
 
     df = pd.DataFrame({
         "Fecha": fechas,
         "Entrada_total": entradas
     })
-    df["Es_domingo"] = [datetime.datetime.strptime(f, "%d-%b-%Y").weekday()==6 for f in fechas]
+    df["Es_domingo"] = [fecha_a_dt(f).weekday()==6 for f in fechas]
     df["Capacidad_SURF"] = [
         capacidad_surf * (turnos_surf_dom if row["Es_domingo"] else turnos_surf)
         for idx, row in df.iterrows()
@@ -272,8 +278,8 @@ elif tab == "Temporada Alta":
         for idx, row in df.iterrows()
     ]
 
-    df["Lente_terminado"] = df["Entrada_total"] * pct_directo_montaje
-    df["Lente_surf"] = df["Entrada_total"] * pct_surf
+    df["Lente_terminado"] = df["Entrada_total"] * 0.25
+    df["Lente_surf"] = df["Entrada_total"] * 0.75
     df["Lente_surf_ar_no_montaje"] = df["Lente_surf"] * pct_surf_ar_no_montaje
     df["Lente_surf_ar_montaje"] = df["Lente_surf"] * pct_surf_ar_montaje
     df["Lente_surf_montaje_no_ar"] = df["Lente_surf"] * pct_surf_montaje_no_ar
@@ -313,11 +319,9 @@ elif tab == "Temporada Alta":
     df["WIP_AR"] = wip_ar
 
     # Montaje (suma los 3 flujos que llegan a Montaje)
-    if (df["Lente_surf_ar_montaje"] + df["Lente_surf_ar_no_montaje"]).sum() > 0:
-        ratio_ar_montaje = df["Lente_surf_ar_montaje"] / (df["Lente_surf_ar_montaje"] + df["Lente_surf_ar_no_montaje"])
-    else:
-        ratio_ar_montaje = 0
-    df["Entradas_montaje"] = df["Lente_terminado"] + df["Salida_AR"] * ratio_ar_montaje.fillna(0) + df["Lente_surf_montaje_no_ar"]
+    ratio_ar_montaje = df["Lente_surf_ar_montaje"] / (df["Lente_surf_ar_montaje"] + df["Lente_surf_ar_no_montaje"])
+    ratio_ar_montaje = ratio_ar_montaje.fillna(0)
+    df["Entradas_montaje"] = df["Lente_terminado"] + df["Salida_AR"] * ratio_ar_montaje + df["Lente_surf_montaje_no_ar"]
 
     wip_em = []
     wip_actual_em = wip_inicial_em
