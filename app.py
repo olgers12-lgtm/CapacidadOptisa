@@ -87,10 +87,18 @@ if tab == "Capacidad SURF":
                 y=bar_names,
                 x=df["Capacidad diaria (real)"],
                 textinfo="value+percent initial",
-                marker={"color": bar_colors}
+                marker={"color": bar_colors},
+                textfont=dict(
+                    size=28,
+                    family="Arial Black, Arial, sans-serif",
+                    color="white"
+                )
             )
         )
-        fig2.update_layout(title="Flujo y Bottleneck (lentes/día)", funnelmode="stack")
+        fig2.update_layout(
+            title="Flujo y Bottleneck (lentes/día)",
+            funnelmode="stack"
+        )
         st.plotly_chart(fig2, use_container_width=True)
     with col2:
         st.subheader("📈 KPIs y Simulación")
@@ -177,7 +185,12 @@ elif tab == "Capacidad E&M":
                 y=bar_names,
                 x=df_em["Capacidad diaria (real)"],
                 textinfo="value+percent initial",
-                marker={"color": bar_colors}
+                marker={"color": bar_colors},
+                textfont=dict(
+                    size=28,
+                    family="Arial Black, Arial, sans-serif",
+                    color="white"
+                )
             )
         )
         fig2.update_layout(title="Flujo y Bottleneck (lentes/día)", funnelmode="stack")
