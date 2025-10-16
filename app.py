@@ -22,7 +22,7 @@ with colB:
 
 tab = st.radio(
     "Selecciona el proceso:", 
-    options=["SURF (Superficies)", "E&M (Ensamble y Montaje)"], 
+    options=["SURF (Superficies)", "E&M (Ensamble y Montaje)", "WIP Temporada Alta"], 
     horizontal=True
 )
 
@@ -189,11 +189,9 @@ if tab == "SURF (Superficies)":
         st.dataframe(df.drop("Color", axis=1), use_container_width=True)
 
     st.markdown("---")
-    # --- 7. Exportación de resultados ---
     st.header("💾 Exportar análisis")
     st.download_button("Descargar tabla de capacidad en CSV", data=df.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_linea.csv', mime='text/csv')
 
-    # --- 8. Tooltips, Expander y UI Moderna ---
     with st.expander("¿Cómo se calculan los KPIs?"):
         st.markdown(f"""
         - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
@@ -214,7 +212,6 @@ elif tab == "E&M (Ensamble y Montaje)":
     st.markdown("---")
     st.markdown("## 🏭 Ensamble y Montaje - Capacidad, Bottleneck y Simulación Industrial")
 
-    # --- 1. Parámetros editables para E&M ---
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
     default_stations_em = [
         {
@@ -222,7 +219,7 @@ elif tab == "E&M (Ensamble y Montaje)":
             "icon": "🔲",
             "color": "#8e44ad",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 12*60.0}  # 12 lentes/min = 720/h
+                {"type": "Manual", "count": 1, "capacity": 12*60.0}
             ]
         },
         {
@@ -230,7 +227,7 @@ elif tab == "E&M (Ensamble y Montaje)":
             "icon": "🟦",
             "color": "#2980b9",
             "machines": [
-                {"type": "Manual", "count": 1, "capacity": 10*60.0}  # 10 lentes/min = 600/h
+                {"type": "Manual", "count": 1, "capacity": 10*60.0}
             ]
         },
         {
@@ -269,14 +266,12 @@ elif tab == "E&M (Ensamble y Montaje)":
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations_em.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
-    # --- 2. Parámetros globales ---
     st.sidebar.header("📊 Parámetros globales")
     line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
     num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3)
     horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8)
     scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
 
-    # --- 3. Capacidad por estación ---
     station_capacity_em = []
     for station in stations_em:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
@@ -290,7 +285,6 @@ elif tab == "E&M (Ensamble y Montaje)":
     df_em = pd.DataFrame(station_capacity_em)
     capacidad_linea_diaria_em = df_em["Capacidad diaria (real)"].min()
 
-    # --- 4. Visualización ---
     bar_colors = df_em["Color"].tolist()
     bar_names = df_em["Estación"].tolist()
 
@@ -337,11 +331,9 @@ elif tab == "E&M (Ensamble y Montaje)":
         st.dataframe(df_em.drop("Color", axis=1), use_container_width=True)
 
     st.markdown("---")
-    # --- 5. Exporta resultados ---
     st.header("💾 Exportar análisis")
     st.download_button("Descargar tabla de capacidad en CSV", data=df_em.drop("Color", axis=1).to_csv(index=False).encode('utf-8'), file_name='capacidad_em.csv', mime='text/csv')
 
-    # --- 6. Tooltips, Expander y UI Moderna ---
     with st.expander("¿Cómo se calculan los KPIs?"):
         st.markdown(f"""
         - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
@@ -357,3 +349,59 @@ elif tab == "E&M (Ensamble y Montaje)":
         <span style="font-size:1em;">Hecho por Ing. Sebastian Guerrero!</span>
     </div>
     """, unsafe_allow_html=True)
+
+elif tab == "WIP Temporada Alta":
+    st.markdown("---")
+    st.markdown("## 📈 Análisis WIP, Entradas y Salidas - Temporada Alta")
+
+    sheet_url = "https://docs.google.com/spreadsheets/d/1kMt2eSweVawnCURnRki0na99uLxQn-yLg_zI2IZwpwY/export?format=csv"
+    df = pd.read_csv(sheet_url)
+
+    df.columns = [col.strip() for col in df.columns]
+    fecha_col = [c for c in df.columns if "fecha" in c.lower()][0]
+    entrada_col = [c for c in df.columns if "entrada" in c.lower()][0]
+    salida_col = [c for c in df.columns if "salida" in c.lower()][0]
+    wip_col = [c for c in df.columns if "wip" in c.lower()][0]
+
+    df[fecha_col] = pd.to_datetime(df[fecha_col])
+    df = df.sort_values(fecha_col)
+
+    st.sidebar.header("🎛️ Filtros WIP")
+    date_min = df[fecha_col].min()
+    date_max = df[fecha_col].max()
+    date_range = st.sidebar.date_input("Rango de fechas", [date_min, date_max], min_value=date_min, max_value=date_max)
+
+    df_filt = df[(df[fecha_col] >= pd.to_datetime(date_range[0])) & (df[fecha_col] <= pd.to_datetime(date_range[1]))]
+
+    extra_filters = [c for c in df.columns if c not in [fecha_col, entrada_col, salida_col, wip_col]]
+    for c in extra_filters:
+        vals = df_filt[c].unique()
+        if len(vals) > 1 and df_filt[c].dtype == 'O':
+            val = st.sidebar.multiselect(f"Filtrar por {c}", options=vals, default=list(vals))
+            df_filt = df_filt[df_filt[c].isin(val)]
+
+    st.title("📈 Dashboard WIP - Temporada Alta")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("WIP Máximo", int(df_filt[wip_col].max()))
+    col2.metric("WIP Mínimo", int(df_filt[wip_col].min()))
+    col3.metric("Entradas totales", int(df_filt[entrada_col].sum()))
+    col4.metric("Salidas totales", int(df_filt[salida_col].sum()))
+
+    st.subheader("Evolución de Entradas, Salidas y WIP")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_filt[fecha_col], y=df_filt[wip_col], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
+    fig.add_trace(go.Bar(x=df_filt[fecha_col], y=df_filt[entrada_col], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
+    fig.add_trace(go.Bar(x=df_filt[fecha_col], y=df_filt[salida_col], name="Salidas", marker=dict(color="#d62728"), opacity=0.6))
+    fig.update_layout(barmode='overlay', xaxis_title="Fecha", yaxis_title="Cantidad", legend_title="Variable", template="plotly_white")
+    st.plotly_chart(fig, use_container_width=True)
+
+    with st.expander("🔎 Ver datos filtrados"):
+        st.dataframe(df_filt, use_container_width=True)
+
+    st.subheader("KPIs Avanzados")
+    st.write(f"Promedio diario de WIP: **{df_filt[wip_col].mean():.1f}**")
+    st.write(f"Día con mayor WIP: **{df_filt.loc[df_filt[wip_col].idxmax(), fecha_col].date()}**")
+    st.write(f"Día con mayor entradas: **{df_filt.loc[df_filt[entrada_col].idxmax(), fecha_col].date()}**")
+    st.write(f"Día con mayor salidas: **{df_filt.loc[df_filt[salida_col].idxmax(), fecha_col].date()}**")
+
+    st.download_button("Descargar datos filtrados (CSV)", data=df_filt.to_csv(index=False).encode("utf-8"), file_name="WIP_analisis_temporada_alta.csv", mime="text/csv")
