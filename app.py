@@ -58,15 +58,7 @@ if tab == "SURF (Superficies)":
                 {"type": "Orbit", "count": 3, "capacity": 77.0}
             ]
         },
-        {
-            "name": "Laser",
-            "icon": "🟨",
-            "color": "#f7e017",
-            "machines": [
-                {"type": "Automático", "count": 1, "capacity": 100.0},
-                {"type": "Manual", "count": 1, "capacity": 110.0}
-            ]
-        },
+        # Se elimina Laser aquí
         {
             "name": "Pulido",
             "icon": "🟪",
@@ -136,11 +128,7 @@ if tab == "SURF (Superficies)":
     # --- 4. Cálculo de capacidad por estación ---
     station_capacity = []
     for station in stations:
-        # Laser solo recibe pct_free_frac de los trabajos
-        if station["name"] == "Laser":
-            total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee * pct_free_frac
-        else:
-            total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
+        total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
         capacidad_diaria = total_capacity * num_turnos * horas_turno * (1 - scrap_rate)
         station_capacity.append({
             "Estación": f"{station['icon']} {station['name']}",
@@ -206,7 +194,6 @@ if tab == "SURF (Superficies)":
     # --- 8. Tooltips, Expander y UI Moderna ---
     with st.expander("¿Cómo se calculan los KPIs?"):
         st.markdown(f"""
-        - Laser solo recibe el {pct_free}% de trabajos (Free/Digital).
         - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
         - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
         - **Cuello de botella:** Estación con menor capacidad diaria.
