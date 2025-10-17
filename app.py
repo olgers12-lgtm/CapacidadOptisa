@@ -287,7 +287,14 @@ import plotly.graph_objs as go
 
 st.title("Simulación WIP Variable - Temporada Alta Extendida")
 
-# --- Fechas y entradas extendidas ---
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
+
+st.title("Simulación WIP Variable - Análisis Pro Senior Industrial")
+
+# --- Fechas y entradas ---
 dias = [
     "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
     "15-dic","16-dic","17-dic","18-dic","19-dic","20-dic","21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
@@ -304,10 +311,9 @@ dias_en = [traduce_fecha(d) for d in dias]
 dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
 entradas_raw = [
-    889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204,773,694,791,581,657,544,87,632,702,589,None,606,378,89
+    889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204,773,694,791,581,657,544,87,632,702,589,0,606,378,89
 ]
-# Reemplaza "-" (None) por 0
-entradas = np.array([e if e is not None else 0 for e in entradas_raw])
+entradas = np.array(entradas_raw)
 
 # --- Parámetros variables ---
 st.sidebar.header("🔧 Parámetros de Simulación WIP")
@@ -345,30 +351,92 @@ df_sim = pd.DataFrame({
     "WIP": np.round(wip, 2)
 })
 
-st.markdown("### KPIs de la Simulación")
-col1, col2, col3 = st.columns(3)
+# --- ANÁLISIS PRO SENIOR ---
+wip_threshold = 1000
+# Encuentra la primera fecha donde el WIP es <= 1000 y no vuelve a subir después
+wip_np = np.array(wip)
+stabilization_point = None
+for i in range(len(wip_np)):
+    if wip_np[i] <= wip_threshold and np.all(wip_np[i:] <= wip_threshold):
+        stabilization_point = i
+        break
+
+if stabilization_point is not None:
+    df_sim["Estabilizado"] = False
+    df_sim.loc[df_sim.index >= stabilization_point, "Estabilizado"] = True
+    estabilidad_fecha = df_sim.loc[stabilization_point, "Fecha"]
+    estabilidad_wip = df_sim.loc[stabilization_point, "WIP"]
+else:
+    df_sim["Estabilizado"] = False
+
+dias_arriba = np.sum(wip_np > wip_threshold)
+dias_abajo = np.sum(wip_np <= wip_threshold)
+dias_transicion = stabilization_point if stabilization_point is not None else len(wip_np)
+wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
+wip_promedio_post = np.mean(wip_np[dias_transicion:]) if dias_transicion < len(wip_np) else 0
+
+# --- KPIs avanzados ---
+st.markdown("## KPIs Senior Industrial")
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("WIP final", f"{wip[-1]:.0f}")
 col2.metric("WIP máximo", f"{np.max(wip):.0f}")
-col3.metric("WIP mínimo", f"{np.min(wip):.0f}")
+col3.metric("Días > 1000 WIP", f"{dias_arriba}")
+col4.metric("Días ≤ 1000 WIP", f"{dias_abajo}")
 
-st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación)")
+if stabilization_point is not None:
+    st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} piezas, después de {dias_transicion} días.")
+else:
+    st.warning("El WIP nunca se estabiliza por debajo de 1000 en el periodo simulado.")
+
+st.markdown(f"- WIP promedio antes de estabilizarse: **{wip_promedio_pre:.0f}**")
+st.markdown(f"- WIP promedio después de estabilizarse: **{wip_promedio_post:.0f}**")
+
+# --- VISUALIZACIÓN PRO SENIOR ---
+st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación PRO)")
+
 fig = go.Figure()
-fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
-fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Salidas"], name="Salidas (Output Real)", marker=dict(color="#d62728"), opacity=0.6))
+fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.5))
+fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Salidas"], name="Salidas", marker=dict(color="#d62728"), opacity=0.5))
 fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["WIP"], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
+
+# Banda de color para WIP alto
+fig.add_shape(type="rect", xref="x", yref="y",
+              x0=df_sim["Fecha"].iloc[0], y0=wip_threshold, x1=df_sim["Fecha"].iloc[-1], y1=max(wip_np),
+              fillcolor="red", opacity=0.08, layer="below", line_width=0)
+
+# Banda de color para WIP bajo
+fig.add_shape(type="rect", xref="x", yref="y",
+              x0=df_sim["Fecha"].iloc[0], y0=0, x1=df_sim["Fecha"].iloc[-1], y1=wip_threshold,
+              fillcolor="green", opacity=0.08, layer="below", line_width=0)
+
 fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["Output Objetivo"], name="Output Objetivo diario", mode="lines", line=dict(dash="dash", color="#555")))
+
+if stabilization_point is not None:
+    fig.add_trace(go.Scatter(
+        x=[estabilidad_fecha],
+        y=[estabilidad_wip],
+        mode="markers+text",
+        marker=dict(size=14, color="orange"),
+        text=["Estabilización"],
+        textposition="top center",
+        name="Estabilización WIP",
+    ))
+
 fig.update_layout(barmode='overlay', xaxis_title="Fecha", yaxis_title="Cantidad", legend_title="Variable", template="plotly_white")
+fig.update_yaxes(range=[0, max(max(wip_np)*1.1, 1500)])
 st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("### Tabla de Simulación")
 st.dataframe(df_sim, use_container_width=True)
 st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False).encode("utf-8"), file_name="simulacion_wip_variable.csv", mime="text/csv")
 
-with st.expander("¿Cómo se calcula el output objetivo?"):
+with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabilidad?"):
     st.markdown(f"""
     - **Capacidad AR diaria:** turnos × 290 (cuello botella por turno de 7h)
     - **Output objetivo diario:** los 3 primeros días es 600, el resto: capacidad AR + (entrada × %LT) + (entrada × %SURF+CAPA)
     - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
     - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
-    - **Puedes mover los parámetros para ver el efecto en el WIP y las salidas!
+    - **Estabilidad:** el primer día donde WIP ≤ 1000 y nunca vuelve a subir
+    - **KPIs avanzados:** días arriba/abajo de 1000, promedio WIP antes/después de estabilizarse, días hasta estabilidad
+    - **Visualización:** banda roja para WIP alto, verde para WIP bajo, punto de estabilización marcado en el gráfico.
     """)
