@@ -30,7 +30,6 @@ if tab == "SURF (Superficies)":
     st.markdown("---")
     st.markdown("## 🚀 Superficies - Capacidad, Bottleneck y Simulación Industrial")
 
-    # --- 1. Parámetros editables ---
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
     default_stations = [
         {
@@ -112,14 +111,12 @@ if tab == "SURF (Superficies)":
             machines.append({"type": machine["type"], "count": count, "capacity": capacity})
         stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
-    # --- OEE de la línea ---
     st.sidebar.header("📊 Parámetros globales")
     line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
     num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3)
     horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8)
     scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
 
-    # --- 3. Importación de datos (opcional) ---
     st.sidebar.header("📂 Importar datos reales")
     uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
     if uploaded_file:
@@ -127,7 +124,6 @@ if tab == "SURF (Superficies)":
         st.write("📊 Datos importados:")
         st.dataframe(df_input)
 
-    # --- 4. Cálculo de capacidad por estación ---
     station_capacity = []
     for station in stations:
         total_capacity = sum([m["count"] * m["capacity"] for m in station["machines"]]) * line_oee
@@ -142,7 +138,6 @@ if tab == "SURF (Superficies)":
     df = pd.DataFrame(station_capacity)
     capacidad_linea_diaria = df["Capacidad diaria (real)"].min()
 
-    # --- 5. Dashboard visual ---
     bar_colors = df["Color"].tolist()
     bar_names = df["Estación"].tolist()
 
@@ -354,66 +349,92 @@ elif tab == "WIP Temporada Alta":
     st.markdown("---")
     st.markdown("## 📈 Análisis WIP, Entradas y Salidas - Temporada Alta")
 
-    sheet_url = "https://docs.google.com/spreadsheets/d/1kMt2eSweVawnCURnRki0na99uLxQn-yLg_zI2IZwpwY/export?format=csv"
-    df = pd.read_csv(sheet_url, header=None)
-    st.write("Vista previa de datos (10 filas):", df.head(10))
+    # 1. Lee el Excel de Google Sheets transpuesto
+    sheet_url = "https://docs.google.com/spreadsheets/d/1kMt2eSweVawnCURnRki0na99uLxQn-yLg_zI2IZwpwY/export?format=xlsx"
+    df_raw = pd.read_excel(sheet_url, header=None)
+    st.write("Vista previa de datos (10 filas):", df_raw.head(10))
 
-    # SELECCIÓN de fila de encabezados
-    fila_encabezados = st.number_input("¿En qué fila están los nombres de las columnas? (0-index)", min_value=0, max_value=len(df)-1, value=0)
+    # 2. Permite elegir la fila de encabezados
+    fila_encabezados = st.number_input(
+        "¿En qué fila están los nombres de las columnas? (0-index)", min_value=0,
+        max_value=len(df_raw)-1, value=10
+    )
+    df = df_raw.copy()
     df.columns = df.iloc[fila_encabezados]
-    df = df.drop(index=range(fila_encabezados+1)).reset_index(drop=True)
+    df = df.drop(index=range(fila_encabezados + 1)).reset_index(drop=True)
     st.write("Nombres de columnas detectados:", df.columns.tolist())
     st.write("Vista previa de datos limpios:", df.head(10))
 
-    # Selección de columnas
-    fecha_col = st.selectbox("Selecciona la columna de FECHA:", df.columns)
-    entrada_col = st.selectbox("Selecciona la columna de ENTRADAS:", df.columns)
-    salida_col = st.selectbox("Selecciona la columna de SALIDAS:", df.columns)
-    wip_col = st.selectbox("Selecciona la columna de WIP:", df.columns)
+    # 3. Permite elegir la columna de tipo de dato (Entradas/Salidas/WIP)
+    columna_tipo = st.selectbox("Selecciona la columna que contiene el tipo de dato (Ej: Entradas, Salidas, WIP)", df.columns)
+    columnas_fechas = [c for c in df.columns if c != columna_tipo and pd.notna(c)]
 
-    # Conversión de tipos
-    df[fecha_col] = pd.to_datetime(df[fecha_col], errors='coerce')
-    df[entrada_col] = pd.to_numeric(df[entrada_col], errors="coerce")
-    df[salida_col] = pd.to_numeric(df[salida_col], errors="coerce")
-    df[wip_col] = pd.to_numeric(df[wip_col], errors="coerce")
-    df = df.dropna(subset=[fecha_col])
+    # 4. Derrite el DataFrame (convierte columnas de fechas en filas)
+    df_melted = df.melt(id_vars=[columna_tipo], value_vars=columnas_fechas,
+                        var_name="Fecha", value_name="Valor")
+    df_melted = df_melted.rename(columns={columna_tipo: "Tipo"})
+    # Limpia fechas y valores
+    def parse_fecha(f):
+        try:
+            return pd.to_datetime(f + "-2024", format="%d-%b-%Y")
+        except:
+            try:
+                return pd.to_datetime(f, dayfirst=True)
+            except:
+                return pd.NaT
+    df_melted["Fecha"] = df_melted["Fecha"].apply(parse_fecha)
+    df_melted["Valor"] = pd.to_numeric(df_melted["Valor"], errors="coerce")
+    df_melted = df_melted.dropna(subset=["Fecha", "Valor", "Tipo"])
 
-    st.sidebar.header("🎛️ Filtros WIP")
-    date_min = df[fecha_col].min()
-    date_max = df[fecha_col].max()
-    date_range = st.sidebar.date_input("Rango de fechas", [date_min, date_max], min_value=date_min, max_value=date_max)
+    st.write("Vista previa tabla normalizada:", df_melted.head(10))
 
-    df_filt = df[(df[fecha_col] >= pd.to_datetime(date_range[0])) & (df[fecha_col] <= pd.to_datetime(date_range[1]))]
+    # 5. Filtros
+    tipos_disponibles = df_melted["Tipo"].unique().tolist()
+    tipos_seleccionados = st.multiselect("Selecciona los tipos a analizar", tipos_disponibles, default=tipos_disponibles)
+    df_melted = df_melted[df_melted["Tipo"].isin(tipos_seleccionados)]
 
-    extra_filters = [c for c in df.columns if c not in [fecha_col, entrada_col, salida_col, wip_col]]
-    for c in extra_filters:
-        vals = df_filt[c].dropna().unique()
-        if len(vals) > 1 and df_filt[c].dtype == 'O':
-            val = st.sidebar.multiselect(f"Filtrar por {c}", options=vals, default=list(vals))
-            df_filt = df_filt[df_filt[c].isin(val)]
+    fecha_min = df_melted["Fecha"].min().date()
+    fecha_max = df_melted["Fecha"].max().date()
+    rango_fechas = st.sidebar.date_input("Rango de fechas", [fecha_min, fecha_max], min_value=fecha_min, max_value=fecha_max)
+    df_melted = df_melted[(df_melted["Fecha"].dt.date >= rango_fechas[0]) & (df_melted["Fecha"].dt.date <= rango_fechas[1])]
 
+    # 6. Pivot para gráfico
+    df_pivot = df_melted.pivot(index="Fecha", columns="Tipo", values="Valor").sort_index()
+
+    # 7. KPIs
     st.title("📈 Dashboard WIP - Temporada Alta")
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("WIP Máximo", int(df_filt[wip_col].max()))
-    col2.metric("WIP Mínimo", int(df_filt[wip_col].min()))
-    col3.metric("Entradas totales", int(df_filt[entrada_col].sum()))
-    col4.metric("Salidas totales", int(df_filt[salida_col].sum()))
+    if "WIP" in df_pivot:
+        col1.metric("WIP Máximo", int(df_pivot["WIP"].max()))
+        col2.metric("WIP Mínimo", int(df_pivot["WIP"].min()))
+    if "Entradas" in df_pivot:
+        col3.metric("Entradas totales", int(df_pivot["Entradas"].sum()))
+    if "Salidas" in df_pivot:
+        col4.metric("Salidas totales", int(df_pivot["Salidas"].sum()))
 
+    # 8. Gráfico
     st.subheader("Evolución de Entradas, Salidas y WIP")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_filt[fecha_col], y=df_filt[wip_col], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
-    fig.add_trace(go.Bar(x=df_filt[fecha_col], y=df_filt[entrada_col], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
-    fig.add_trace(go.Bar(x=df_filt[fecha_col], y=df_filt[salida_col], name="Salidas", marker=dict(color="#d62728"), opacity=0.6))
+    if "WIP" in df_pivot:
+        fig.add_trace(go.Scatter(x=df_pivot.index, y=df_pivot["WIP"], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
+    if "Entradas" in df_pivot:
+        fig.add_trace(go.Bar(x=df_pivot.index, y=df_pivot["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
+    if "Salidas" in df_pivot:
+        fig.add_trace(go.Bar(x=df_pivot.index, y=df_pivot["Salidas"], name="Salidas", marker=dict(color="#d62728"), opacity=0.6))
     fig.update_layout(barmode='overlay', xaxis_title="Fecha", yaxis_title="Cantidad", legend_title="Variable", template="plotly_white")
     st.plotly_chart(fig, use_container_width=True)
 
+    # 9. Tabla y KPIs avanzados
     with st.expander("🔎 Ver datos filtrados"):
-        st.dataframe(df_filt, use_container_width=True)
+        st.dataframe(df_pivot, use_container_width=True)
 
     st.subheader("KPIs Avanzados")
-    st.write(f"Promedio diario de WIP: **{df_filt[wip_col].mean():.1f}**")
-    st.write(f"Día con mayor WIP: **{df_filt.loc[df_filt[wip_col].idxmax(), fecha_col].date()}**")
-    st.write(f"Día con mayor entradas: **{df_filt.loc[df_filt[entrada_col].idxmax(), fecha_col].date()}**")
-    st.write(f"Día con mayor salidas: **{df_filt.loc[df_filt[salida_col].idxmax(), fecha_col].date()}**")
+    if "WIP" in df_pivot:
+        st.write(f"Promedio diario de WIP: **{df_pivot['WIP'].mean():.1f}**")
+        st.write(f"Día con mayor WIP: **{df_pivot['WIP'].idxmax().date()}**")
+    if "Entradas" in df_pivot:
+        st.write(f"Día con mayor entradas: **{df_pivot['Entradas'].idxmax().date()}**")
+    if "Salidas" in df_pivot:
+        st.write(f"Día con mayor salidas: **{df_pivot['Salidas'].idxmax().date()}**")
 
-    st.download_button("Descargar datos filtrados (CSV)", data=df_filt.to_csv(index=False).encode("utf-8"), file_name="WIP_analisis_temporada_alta.csv", mime="text/csv")
+    st.download_button("Descargar datos filtrados (CSV)", data=df_pivot.reset_index().to_csv(index=False).encode("utf-8"), file_name="WIP_analisis_temporada_alta.csv", mime="text/csv")
