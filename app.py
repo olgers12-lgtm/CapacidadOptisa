@@ -358,10 +358,24 @@ elif tab == "WIP Temporada Alta":
     df = pd.read_csv(sheet_url)
 
     df.columns = [col.strip() for col in df.columns]
-    fecha_col = [c for c in df.columns if "fecha" in c.lower()][0]
-    entrada_col = [c for c in df.columns if "entrada" in c.lower()][0]
-    salida_col = [c for c in df.columns if "salida" in c.lower()][0]
-    wip_col = [c for c in df.columns if "wip" in c.lower()][0]
+    st.write("Columnas disponibles:", df.columns.tolist())
+    # Selección robusta de columnas
+    try:
+        fecha_col = [c for c in df.columns if "fecha" in c.lower()][0]
+    except IndexError:
+        fecha_col = st.selectbox("Selecciona la columna de FECHA:", df.columns)
+    try:
+        entrada_col = [c for c in df.columns if "entrada" in c.lower()][0]
+    except IndexError:
+        entrada_col = st.selectbox("Selecciona la columna de ENTRADAS:", df.columns)
+    try:
+        salida_col = [c for c in df.columns if "salida" in c.lower()][0]
+    except IndexError:
+        salida_col = st.selectbox("Selecciona la columna de SALIDAS:", df.columns)
+    try:
+        wip_col = [c for c in df.columns if "wip" in c.lower()][0]
+    except IndexError:
+        wip_col = st.selectbox("Selecciona la columna de WIP:", df.columns)
 
     df[fecha_col] = pd.to_datetime(df[fecha_col])
     df = df.sort_values(fecha_col)
