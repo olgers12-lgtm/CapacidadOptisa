@@ -162,9 +162,9 @@ if tab == "SURF (Superficies)":
     """, unsafe_allow_html=True)
 
 # ========== BLOQUE 2: E&M ==========
-elif tab == "E&M (Ensamble y Montaje)":
+elif tab == "E&M":
     st.markdown("---")
-    st.markdown("## 🏭 Ensamble y Montaje - Capacidad, Bottleneck y Simulación Industrial")
+    st.markdown("## 🏭 E&M - Capacidad, Bottleneck y Simulación Industrial")
 
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
     default_stations_em = [
@@ -323,11 +323,15 @@ wip = []
 salidas = []
 wip_actual = wip_inicial
 
+# Determina si es domingo
 for i in range(len(dias)):
     entrada = entradas[i]
-    # Output objetivo: los 3 primeros días forzados a 600, el resto por la fórmula
+    # Output objetivo: 1-3 dic forzados a 600, domingos forzados a 500, resto por la fórmula
+    fecha_actual = dias_fecha[i]
     if i in [0,1,2]:
         output_obj = 600
+    elif fecha_actual.weekday() == 6:  # Domingo es 6
+        output_obj = 500
     else:
         output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
     outputs_objetivo.append(output_obj)
@@ -346,7 +350,6 @@ df_sim = pd.DataFrame({
 
 # --- ANÁLISIS PRO SENIOR ---
 wip_threshold = 1000
-# Encuentra la primera fecha donde el WIP es <= 1000 y no vuelve a subir después
 wip_np = np.array(wip)
 stabilization_point = None
 for i in range(len(wip_np)):
@@ -367,7 +370,7 @@ dias_transicion = stabilization_point if stabilization_point is not None else le
 wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
 
 # --- KPIs avanzados ---
-st.markdown("## KPIs Senior Industrial")
+st.markdown("## KPIs ")
 col1, col2, col3 = st.columns(3)
 col1.metric("WIP final", f"{wip[-1]:.0f}")
 col2.metric("WIP máximo", f"{np.max(wip):.0f}")
@@ -381,7 +384,7 @@ else:
 st.markdown(f"- WIP promedio antes de estabilizarse: **{wip_promedio_pre:.0f}**")
 
 # --- VISUALIZACIÓN PRO SENIOR ---
-st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación PRO)")
+st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación)")
 
 fig = go.Figure()
 fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.5))
@@ -422,7 +425,7 @@ st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False
 with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabilidad?"):
     st.markdown(f"""
     - **Capacidad AR diaria:** turnos × 290 (cuello botella por turno de 7h)
-    - **Output objetivo diario:** los 3 primeros días es 600, el resto: capacidad AR + (entrada × %LT) + (entrada × %SURF+CAPA)
+    - **Output objetivo diario:** los 3 primeros días es 600, domingos es 500, el resto: capacidad AR + (entrada × %LT) + (entrada × %SURF+CAPA)
     - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
     - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
     - **Estabilidad:** el primer día donde WIP ≤ 1000 y nunca vuelve a subir
