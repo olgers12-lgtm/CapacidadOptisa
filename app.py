@@ -281,88 +281,92 @@ elif tab == "E&M (Ensamble y Montaje)":
     """, unsafe_allow_html=True)
 
 # ========== BLOQUE 3: SIMULACIÓN WIP DINÁMICA ==========
-elif tab == "Simulación WIP":
-    st.markdown("---")
-    st.markdown("## 📈 Simulación Dinámica de WIP (Turnos, Eficiencias, Bottleneck)")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
 
-    # --- Datos base: Entradas proyectadas ---
-    dias = [
-        "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
-        "15-dic","16-dic","17-dic","18-dic","19-dic","20-dic","21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
-    ]
-    mes_map = {
-        'ene':'Jan', 'feb':'Feb', 'mar':'Mar', 'abr':'Apr', 'may':'May', 'jun':'Jun',
-        'jul':'Jul', 'ago':'Aug', 'sep':'Sep', 'oct':'Oct', 'nov':'Nov', 'dic':'Dec'
-    }
-    def traduce_fecha(fecha_str, year=2025):
-        dia, mes = fecha_str.split('-')
-        mes_en = mes_map[mes.lower()]
-        return f"{dia}-{mes_en}-{year}"
-    dias_en = [traduce_fecha(d) for d in dias]
-    dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
+st.markdown("## 📈 Simulación Dinámica de WIP (Turnos, Eficiencias, Bottleneck)")
 
-    entradas = np.array([889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204,773,694,791,581,657,544,87,632,702,589,np.nan,606,378,89])
-    entradas[np.isnan(entradas)] = 0
+# --- Entradas proyectadas ---
+dias = [
+    "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
+    "15-dic","16-dic","17-dic","18-dic","19-dic","20-dic","21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
+]
+mes_map = {
+    'ene':'Jan', 'feb':'Feb', 'mar':'Mar', 'abr':'Apr', 'may':'May', 'jun':'Jun',
+    'jul':'Jul', 'ago':'Aug', 'sep':'Sep', 'oct':'Oct', 'nov':'Nov', 'dic':'Dec'
+}
+def traduce_fecha(fecha_str, year=2025):
+    dia, mes = fecha_str.split('-')
+    mes_en = mes_map[mes.lower()]
+    return f"{dia}-{mes_en}-{year}"
+dias_en = [traduce_fecha(d) for d in dias]
+dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
-    # --- Parámetros editables ---
-    st.sidebar.header("🔧 Parámetros de Simulación WIP")
-    wip_inicial = st.sidebar.number_input("WIP inicial (1-dic)", min_value=0, value=1200)
-    turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=2)
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=1, max_value=12, value=7)
-    cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por turno", min_value=1, value=290)
-    lt_pct = st.sidebar.slider("Porcentaje de LT (%)", min_value=0.0, max_value=0.5, value=0.30, step=0.01)
-    surf_capa_pct = st.sidebar.slider("Porcentaje de SURF+CAPA (%)", min_value=0.0, max_value=0.2, value=0.08, step=0.01)
+entradas = np.array([889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204,773,694,791,581,657,544,87,632,702,589,np.nan,606,378,89])
+entradas[np.isnan(entradas)] = 0
 
-    cap_ar_dia = turnos * horas_turno * cap_ar_por_turno
+# --- Parámetros editables ---
+st.sidebar.header("🔧 Parámetros de Simulación WIP")
+wip_inicial = st.sidebar.number_input("WIP inicial (1-dic)", min_value=0, value=1200)
+turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=2)
+horas_turno = st.sidebar.number_input("Horas por turno", min_value=1, max_value=12, value=7)
+cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por turno", min_value=1, value=290)
+lt_pct = st.sidebar.slider("Porcentaje de LT (%)", min_value=0.0, max_value=0.5, value=0.30, step=0.01)
+surf_capa_pct = st.sidebar.slider("Porcentaje de SURF+CAPA (%)", min_value=0.0, max_value=0.2, value=0.08, step=0.01)
 
-    outputs_objetivo = []
-    wip = []
-    salidas = []
-    wip_actual = wip_inicial
+cap_ar_dia = turnos * horas_turno * cap_ar_por_turno
 
-    for i in range(len(dias)):
-        entrada = entradas[i]
-        output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
-        outputs_objetivo.append(output_obj)
-        salida = min(wip_actual + entrada, output_obj)
-        salidas.append(salida)
-        wip_actual = wip_actual + entrada - salida
-        wip.append(wip_actual)
+outputs_objetivo = []
+wip = []
+salidas = []
+wip_actual = wip_inicial
 
-    df_sim = pd.DataFrame({
-        "Fecha": dias_fecha,
-        "Entradas": entradas,
-        "Output Objetivo": outputs_objetivo,
-        "Salidas": salidas,
-        "WIP": wip
-    })
+for i in range(len(dias)):
+    entrada = entradas[i]
+    # Output objetivo correcto: capacidad AR + %LT + %SURF+CAPA de la entrada del día
+    output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
+    outputs_objetivo.append(output_obj)
+    salida = min(wip_actual + entrada, output_obj)
+    salidas.append(salida)
+    wip_actual = wip_actual + entrada - salida
+    wip.append(wip_actual)
 
-    # --- KPIs ---
-    st.markdown("### KPIs de la Simulación")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("WIP final", f"{wip[-1]:.0f}")
-    col2.metric("WIP máximo", f"{np.max(wip):.0f}")
-    col3.metric("WIP mínimo", f"{np.min(wip):.0f}")
+df_sim = pd.DataFrame({
+    "Fecha": dias_fecha,
+    "Entradas": entradas,
+    "Output Objetivo": outputs_objetivo,
+    "Salidas": salidas,
+    "WIP": wip
+})
 
-    # --- Gráfica ---
-    st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación)")
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
-    fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Salidas"], name="Salidas (Output Real)", marker=dict(color="#d62728"), opacity=0.6))
-    fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["WIP"], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
-    fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["Output Objetivo"], name="Output Objetivo diario", mode="lines", line=dict(dash="dash", color="#555")))
-    fig.update_layout(barmode='overlay', xaxis_title="Fecha", yaxis_title="Cantidad", legend_title="Variable", template="plotly_white")
-    st.plotly_chart(fig, use_container_width=True)
+# --- KPIs ---
+st.markdown("### KPIs de la Simulación")
+col1, col2, col3 = st.columns(3)
+col1.metric("WIP final", f"{wip[-1]:.0f}")
+col2.metric("WIP máximo", f"{np.max(wip):.0f}")
+col3.metric("WIP mínimo", f"{np.min(wip):.0f}")
 
-    st.markdown("### Tabla de Simulación")
-    st.dataframe(df_sim, use_container_width=True)
-    st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False).encode("utf-8"), file_name="simulacion_wip_temporada_alta.csv", mime="text/csv")
+# --- Gráfica ---
+st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación)")
+fig = go.Figure()
+fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.6))
+fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Salidas"], name="Salidas (Output Real)", marker=dict(color="#d62728"), opacity=0.6))
+fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["WIP"], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
+fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["Output Objetivo"], name="Output Objetivo diario", mode="lines", line=dict(dash="dash", color="#555")))
+fig.update_layout(barmode='overlay', xaxis_title="Fecha", yaxis_title="Cantidad", legend_title="Variable", template="plotly_white")
+st.plotly_chart(fig, use_container_width=True)
 
-    with st.expander("¿Cómo se calcula el output objetivo?"):
-        st.markdown(f"""
-        - **Capacidad AR diaria:** turnos × horas por turno × 290 (cuello botella)
-        - **Output objetivo diario:** capacidad AR + (entrada del día × %LT) + (entrada del día × %SURF+CAPA)
-        - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
-        - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
-        - **Puedes mover los parámetros para ver el efecto en el WIP y las salidas!
-        """)
+st.markdown("### Tabla de Simulación")
+st.dataframe(df_sim, use_container_width=True)
+st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False).encode("utf-8"), file_name="simulacion_wip_temporada_alta.csv", mime="text/csv")
+
+with st.expander("¿Cómo se calcula el output objetivo?"):
+    st.markdown(f"""
+    - **Capacidad AR diaria:** turnos × horas por turno × 290 (cuello botella)
+    - **Output objetivo diario:** capacidad AR + (entrada del día × %LT) + (entrada del día × %SURF+CAPA)
+    - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
+    - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
+    - **Puedes mover los parámetros para ver el efecto en el WIP y las salidas!
+    """)
