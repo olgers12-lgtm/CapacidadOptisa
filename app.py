@@ -355,30 +355,28 @@ elif tab == "WIP Temporada Alta":
     st.markdown("## 📈 Análisis WIP, Entradas y Salidas - Temporada Alta")
 
     sheet_url = "https://docs.google.com/spreadsheets/d/1kMt2eSweVawnCURnRki0na99uLxQn-yLg_zI2IZwpwY/export?format=csv"
-    df = pd.read_csv(sheet_url)
+    df = pd.read_csv(sheet_url, header=None)
+    st.write("Vista previa de datos (10 filas):", df.head(10))
 
-    df.columns = [col.strip() for col in df.columns]
-    st.write("Columnas disponibles:", df.columns.tolist())
-    # Selección robusta de columnas
-    try:
-        fecha_col = [c for c in df.columns if "fecha" in c.lower()][0]
-    except IndexError:
-        fecha_col = st.selectbox("Selecciona la columna de FECHA:", df.columns)
-    try:
-        entrada_col = [c for c in df.columns if "entrada" in c.lower()][0]
-    except IndexError:
-        entrada_col = st.selectbox("Selecciona la columna de ENTRADAS:", df.columns)
-    try:
-        salida_col = [c for c in df.columns if "salida" in c.lower()][0]
-    except IndexError:
-        salida_col = st.selectbox("Selecciona la columna de SALIDAS:", df.columns)
-    try:
-        wip_col = [c for c in df.columns if "wip" in c.lower()][0]
-    except IndexError:
-        wip_col = st.selectbox("Selecciona la columna de WIP:", df.columns)
+    # SELECCIÓN de fila de encabezados
+    fila_encabezados = st.number_input("¿En qué fila están los nombres de las columnas? (0-index)", min_value=0, max_value=len(df)-1, value=0)
+    df.columns = df.iloc[fila_encabezados]
+    df = df.drop(index=range(fila_encabezados+1)).reset_index(drop=True)
+    st.write("Nombres de columnas detectados:", df.columns.tolist())
+    st.write("Vista previa de datos limpios:", df.head(10))
 
-    df[fecha_col] = pd.to_datetime(df[fecha_col])
-    df = df.sort_values(fecha_col)
+    # Selección de columnas
+    fecha_col = st.selectbox("Selecciona la columna de FECHA:", df.columns)
+    entrada_col = st.selectbox("Selecciona la columna de ENTRADAS:", df.columns)
+    salida_col = st.selectbox("Selecciona la columna de SALIDAS:", df.columns)
+    wip_col = st.selectbox("Selecciona la columna de WIP:", df.columns)
+
+    # Conversión de tipos
+    df[fecha_col] = pd.to_datetime(df[fecha_col], errors='coerce')
+    df[entrada_col] = pd.to_numeric(df[entrada_col], errors="coerce")
+    df[salida_col] = pd.to_numeric(df[salida_col], errors="coerce")
+    df[wip_col] = pd.to_numeric(df[wip_col], errors="coerce")
+    df = df.dropna(subset=[fecha_col])
 
     st.sidebar.header("🎛️ Filtros WIP")
     date_min = df[fecha_col].min()
@@ -389,7 +387,7 @@ elif tab == "WIP Temporada Alta":
 
     extra_filters = [c for c in df.columns if c not in [fecha_col, entrada_col, salida_col, wip_col]]
     for c in extra_filters:
-        vals = df_filt[c].unique()
+        vals = df_filt[c].dropna().unique()
         if len(vals) > 1 and df_filt[c].dtype == 'O':
             val = st.sidebar.multiselect(f"Filtrar por {c}", options=vals, default=list(vals))
             df_filt = df_filt[df_filt[c].isin(val)]
