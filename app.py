@@ -285,13 +285,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 
-st.title("Simulación WIP Variable - Temporada Alta Extendida")
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objs as go
-
 st.title("Simulación WIP Variable - Análisis Pro Senior Industrial")
 
 # --- Fechas y entradas ---
@@ -370,18 +363,15 @@ else:
     df_sim["Estabilizado"] = False
 
 dias_arriba = np.sum(wip_np > wip_threshold)
-dias_abajo = np.sum(wip_np <= wip_threshold)
 dias_transicion = stabilization_point if stabilization_point is not None else len(wip_np)
 wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
-wip_promedio_post = np.mean(wip_np[dias_transicion:]) if dias_transicion < len(wip_np) else 0
 
 # --- KPIs avanzados ---
 st.markdown("## KPIs Senior Industrial")
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 col1.metric("WIP final", f"{wip[-1]:.0f}")
 col2.metric("WIP máximo", f"{np.max(wip):.0f}")
 col3.metric("Días > 1000 WIP", f"{dias_arriba}")
-col4.metric("Días ≤ 1000 WIP", f"{dias_abajo}")
 
 if stabilization_point is not None:
     st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} piezas, después de {dias_transicion} días.")
@@ -389,7 +379,6 @@ else:
     st.warning("El WIP nunca se estabiliza por debajo de 1000 en el periodo simulado.")
 
 st.markdown(f"- WIP promedio antes de estabilizarse: **{wip_promedio_pre:.0f}**")
-st.markdown(f"- WIP promedio después de estabilizarse: **{wip_promedio_post:.0f}**")
 
 # --- VISUALIZACIÓN PRO SENIOR ---
 st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación PRO)")
@@ -437,6 +426,6 @@ with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabi
     - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
     - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
     - **Estabilidad:** el primer día donde WIP ≤ 1000 y nunca vuelve a subir
-    - **KPIs avanzados:** días arriba/abajo de 1000, promedio WIP antes/después de estabilizarse, días hasta estabilidad
+    - **KPIs avanzados:** días arriba de 1000, promedio WIP antes de estabilizarse, días hasta estabilidad
     - **Visualización:** banda roja para WIP alto, verde para WIP bajo, punto de estabilización marcado en el gráfico.
     """)
