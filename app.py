@@ -285,11 +285,12 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 
-st.title("Simulación WIP Variable - Escenario tipo Excel")
+st.title("Simulación WIP Variable - Temporada Alta Extendida")
 
-# --- Fechas y entradas ---
+# --- Fechas y entradas extendidas ---
 dias = [
-    "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic"
+    "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
+    "15-dic","16-dic","17-dic","18-dic","19-dic","20-dic","21-dic","22-dic","23-dic","24-dic","25-dic","26-dic","27-dic","28-dic"
 ]
 mes_map = {
     'ene':'Jan', 'feb':'Feb', 'mar':'Mar', 'abr':'Apr', 'may':'May', 'jun':'Jun',
@@ -302,7 +303,11 @@ def traduce_fecha(fecha_str, year=2025):
 dias_en = [traduce_fecha(d) for d in dias]
 dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
-entradas = np.array([889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204])
+entradas_raw = [
+    889,1332,1358,1340,1488,2070,309,732,789,685,637,668,681,204,773,694,791,581,657,544,87,632,702,589,None,606,378,89
+]
+# Reemplaza "-" (None) por 0
+entradas = np.array([e if e is not None else 0 for e in entradas_raw])
 
 # --- Parámetros variables ---
 st.sidebar.header("🔧 Parámetros de Simulación WIP")
@@ -312,7 +317,6 @@ cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por tu
 lt_pct = st.sidebar.slider("Porcentaje de LT (%)", min_value=0.0, max_value=1.0, value=0.30, step=0.01)
 surf_capa_pct = st.sidebar.slider("Porcentaje de SURF+CAPA (%)", min_value=0.0, max_value=1.0, value=0.08, step=0.01)
 
-# CORRECTO: Capacidad AR diaria = turnos * 290 (no multiplica por horas)
 cap_ar_dia = turnos * cap_ar_por_turno
 
 outputs_objetivo = []
@@ -322,7 +326,11 @@ wip_actual = wip_inicial
 
 for i in range(len(dias)):
     entrada = entradas[i]
-    output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
+    # Output objetivo: los 3 primeros días forzados a 600, el resto por la fórmula
+    if i in [0,1,2]:
+        output_obj = 600
+    else:
+        output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
     outputs_objetivo.append(output_obj)
     salida = min(wip_actual + entrada, output_obj)
     salidas.append(salida)
@@ -359,7 +367,7 @@ st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False
 with st.expander("¿Cómo se calcula el output objetivo?"):
     st.markdown(f"""
     - **Capacidad AR diaria:** turnos × 290 (cuello botella por turno de 7h)
-    - **Output objetivo diario:** capacidad AR + (entrada del día × %LT) + (entrada del día × %SURF+CAPA)
+    - **Output objetivo diario:** los 3 primeros días es 600, el resto: capacidad AR + (entrada × %LT) + (entrada × %SURF+CAPA)
     - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
     - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
     - **Puedes mover los parámetros para ver el efecto en el WIP y las salidas!
