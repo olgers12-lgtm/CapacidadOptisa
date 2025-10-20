@@ -362,13 +362,12 @@ elif tab == "Simulación WIP":
     wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
 
     st.markdown("## KPIs")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("WIP final", f"{wip[-1]:.0f}")
-    col2.metric("WIP máximo", f"{np.max(wip):.0f}")
-    col3.metric("Días > 1000 WIP", f"{dias_arriba}")
+    col1, col2 = st.columns(3)
+    col1.metric("WIP máximo", f"{np.max(wip):.0f}")
+    col2.metric("Días > 1000 WIP", f"{dias_arriba}")
 
     if stabilization_point is not None:
-        st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} piezas, después de {dias_transicion} días.")
+        st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} jobs, después de {dias_transicion} días.")
     else:
         st.warning("El WIP nunca se estabiliza por debajo de 1000 en el periodo simulado.")
 
@@ -416,5 +415,4 @@ elif tab == "Simulación WIP":
         - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
         - **Estabilidad:** el primer día donde WIP ≤ 1000 y nunca vuelve a subir
         - **KPIs avanzados:** días arriba de 1000, promedio WIP antes de estabilizarse, días hasta estabilidad
-        - **Visualización:** banda roja para WIP alto, verde para WIP bajo, punto de estabilización marcado en el gráfico.
         """)
