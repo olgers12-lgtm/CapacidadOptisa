@@ -33,7 +33,7 @@ if tab == "SURF (Superficies)":
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas (SURF)")
     default_stations = [
         {"name": "Encintado", "icon": "🟦", "color": "#1f3b6f", "machines": [
-            {"type": "Encintadora Automática", "count": 1, "capacity": 150.0},
+            {"type": "Encintadora Automática", "count": 1, "capacity": 300.0},
             {"type": "Encintado Manual", "count": 1, "capacity": 0.0}]},
         {"name": "Bloqueo Digital", "icon": "🟩", "color": "#27ae60", "machines": [
             {"type": "PRA", "count": 3, "capacity": 80.0}]},
@@ -46,8 +46,8 @@ if tab == "SURF (Superficies)":
             {"type": "Duo Flex", "count": 2, "capacity": 30.0},
             {"type": "DLP", "count": 6, "capacity": 27.0}]},
         {"name": "Desbloqueo", "icon": "⬛", "color": "#222222", "machines": [
-            {"type": "Manual", "count": 1, "capacity": 423.53},
-            {"type": "Desblocker", "count": 1, "capacity": 360.0}]},
+            {"type": "Manual", "count": 1, "capacity": 120},
+            {"type": "Desblocker", "count": 1, "capacity": 120}]},
         {"name": "Calidad", "icon": "⬜", "color": "#eaeaea", "machines": [
             {"type": "Foco Vision", "count": 1, "capacity": 60.0},
             {"type": "Promapper", "count": 1, "capacity": 110.0}]}
