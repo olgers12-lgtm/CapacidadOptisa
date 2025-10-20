@@ -169,9 +169,9 @@ elif tab == "E&M":
     st.sidebar.header("🔧 Configuración de Estaciones y Máquinas E&M")
     default_stations_em = [
         {"name": "Anaquel", "icon": "🔲", "color": "#8e44ad", "machines": [
-            {"type": "Manual", "count": 1, "capacity": 12*60.0}]},
+            {"type": "Manual", "count": 1, "capacity": 8*60.0}]},
         {"name": "Bloqueo", "icon": "🟦", "color": "#2980b9", "machines": [
-            {"type": "Manual", "count": 1, "capacity": 10*60.0}]},
+            {"type": "Manual", "count": 1, "capacity": 6*60.0}]},
         {"name": "Corte", "icon": "✂️", "color": "#27ae60", "machines": [
             {"type": "Bisphera", "count": 1, "capacity": 109.0},
             {"type": "ES4", "count": 2, "capacity": 34.0},
