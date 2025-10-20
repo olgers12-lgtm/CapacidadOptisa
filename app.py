@@ -177,7 +177,7 @@ elif tab == "E&M":
             {"type": "ES4", "count": 2, "capacity": 34.0},
             {"type": "MEI641", "count": 1, "capacity": 74.0}]},
         {"name": "Remate", "icon": "🟨", "color": "#f4d03f", "machines": [
-            {"type": "Manual", "count": 1, "capacity": 60.0}]}
+            {"type": "Manual", "count": 1, "capacity": 64.0}]}
     ]
 
     stations_em = []
