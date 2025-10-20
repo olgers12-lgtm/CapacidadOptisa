@@ -362,7 +362,7 @@ elif tab == "Simulación WIP":
     wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
 
     st.markdown("## KPIs")
-    col1, col2 = st.columns(3)
+    col1, col2 = st.columns(2)
     col1.metric("WIP máximo", f"{np.max(wip):.0f}")
     col2.metric("Días > 1000 WIP", f"{dias_arriba}")
 
