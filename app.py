@@ -299,7 +299,7 @@ elif tab == "Simulación WIP":
     dias_en = [traduce_fecha(d) for d in dias]
     dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
-  entradas_raw = [
+    entradas_raw = [
         905,1355,1382,1363,1514,2106,315,873,942,817,760,797,813,243,880,790,900,662,748,620,99,668,742,623,0,641,400,94
     ]
     entradas = np.array(entradas_raw)
