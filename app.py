@@ -282,7 +282,7 @@ elif tab == "E&M":
 
 # ========== BLOQUE Simulación WIP ==========
 elif tab == "Simulación WIP":
-    st.title("Simulación WIP Variable - Análisis Pro Senior Industrial")
+    st.title("Simulación WIP Variable")
 
     dias = [
         "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
