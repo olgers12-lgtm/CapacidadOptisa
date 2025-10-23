@@ -308,7 +308,7 @@ elif tab == "Simulación WIP":
     st.sidebar.header("🔧 Parámetros de Simulación WIP")
     # --- cambio importante solicitado: el WIP inicial lo ingresa el usuario manualmente.
     wip_inicial = st.sidebar.number_input("WIP inicial (WIP al comienzo del 01-dic) - ingresa el valor", min_value=0, value=1200, step=1)
-    st.sidebar.caption("Introduce el WIP que corresponde al inicio del 01-dic (este valor no se toma de las entradas).")
+    st.sidebar.caption("Introduce el WIP que corresponde al inicio del 01-dic.")
 
     turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=3)
     cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por turno de 7h", min_value=1, value=290)
