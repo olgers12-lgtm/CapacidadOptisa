@@ -281,7 +281,6 @@ elif tab == "E&M":
     """, unsafe_allow_html=True)
 
 # ========== BLOQUE Simulación WIP ==========
-# ========== BLOQUE Simulación WIP ==========
 elif tab == "Simulación WIP":
     st.title("Simulación WIP Variable - Análisis Pro Senior Industrial")
 
@@ -300,69 +299,89 @@ elif tab == "Simulación WIP":
     dias_en = [traduce_fecha(d) for d in dias]
     dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
-    # Entradas (tal como las tenías anteriormente)
+    # Entradas (actualizadas por ti)
     entradas_raw = [
         905,1355,1382,1363,1514,2106,315,873,942,817,760,797,813,243,880,790,900,662,748,620,99,668,742,623,0,641,400,94
     ]
     entradas = np.array(entradas_raw, dtype=float)
 
     st.sidebar.header("🔧 Parámetros de Simulación WIP")
-    # WIP inicial por defecto tomado desde la entrada del 1-dic
-    default_wip_initial = int(entradas[0]) if len(entradas) > 0 else 0
-    wip_inicial = st.sidebar.number_input("WIP inicial (1-dic) — por defecto igual a entrada 1-dic", min_value=0, value=default_wip_initial, step=1)
-    st.sidebar.caption(f"Valor por defecto tomado de la Entrada del 01-dic: {default_wip_initial}")
+    # --- cambio importante solicitado: el WIP inicial lo ingresa el usuario manualmente.
+    wip_inicial = st.sidebar.number_input("WIP inicial (WIP al comienzo del 01-dic) - ingresa el valor", min_value=0, value=1200, step=1)
+    st.sidebar.caption("Introduce el WIP que corresponde al inicio del 01-dic (este valor no se toma de las entradas).")
 
-    turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=2)
+    turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=3)
     cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por turno de 7h", min_value=1, value=290)
     lt_pct = st.sidebar.slider("Porcentaje de LT (%)", min_value=0.0, max_value=1.0, value=0.30, step=0.01)
     surf_capa_pct = st.sidebar.slider("Porcentaje de SURF+CAPA (%)", min_value=0.0, max_value=1.0, value=0.08, step=0.01)
 
     cap_ar_dia = turnos * cap_ar_por_turno
 
-    # Output fijo para 2 turnos (según lista que proporcionaste)
-    fixed_outputs_for_two_shifts = np.array([
+    # Output fijo para 3 turnos (según lista que proporcionaste)
+    fixed_outputs_for_three_shifts = np.array([
         900, 900, 1150, 1150, 1150, 1150, 500, 1150, 1150, 1150, 1150, 1150, 1150, 500,
         870, 840, 877, 798, 826, 784, 0, 800, 824, 785, 0, 631, 612, 587
     ], dtype=float)
 
     outputs_objetivo = []
-    wip = []
+    wip_start = []   # WIP at start of each day
+    wip_end = []     # WIP at end of each day
     salidas = []
-    wip_actual = wip_inicial
+    salidas_calc = []
+    # Initialize start of day 1 with the user-provided wip_inicial
+    current_wip_start = float(wip_inicial)
 
     for i in range(len(dias)):
-        entrada = entradas[i]
+        entrada_today = float(entradas[i])
         fecha_actual = dias_fecha[i]
 
-        # NUEVA LÓGICA: usar fixed_outputs sólo cuando turnos == 2
-        if turnos == 2:
-            output_obj = fixed_outputs_for_two_shifts[i]
+        # Decide output objetivo según la regla: fijos solo si turnos == 3
+        if turnos == 3:
+            output_obj = fixed_outputs_for_three_shifts[i]
         else:
-            # cálculo anterior (mantener comportamiento previo para 1 turno u otros)
+            # cálculo dinámico (igual que antes) para 1,2,4 turnos
             if i in [0,1,2]:
                 output_obj = 600
             elif fecha_actual.weekday() == 6:  # domingo
                 output_obj = 500
             else:
-                output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
+                output_obj = cap_ar_dia + (entrada_today * lt_pct) + (entrada_today * surf_capa_pct)
+
+        # Guardamos WIP de inicio del día
+        wip_start.append(current_wip_start)
+
+        # Disponibilidad para procesar en el día: según la lógica original se consideraba
+        # start_wip + entradas del día (es decir, las entradas del día llegan y pueden procesarse ese día).
+        available_to_process = current_wip_start + entrada_today
+
+        # Salida real (limitada por disponibilidad y output objetivo)
+        salida = min(available_to_process, output_obj)
+        salidas.append(salida)
+
+        # WIP al final del día (se usará como start del siguiente día)
+        end_wip = current_wip_start + entrada_today - salida
+        wip_end.append(end_wip)
+
+        # Preparar start para siguiente día (la fórmula que pediste):
+        # WIP_start_next_day = WIP_end_today (es decir WIP dia anterior + entradas dia anterior - salidas dia anterior)
+        current_wip_start = end_wip
 
         outputs_objetivo.append(output_obj)
-        salida = min(wip_actual + entrada, output_obj)
-        salidas.append(salida)
-        wip_actual = wip_actual + entrada - salida
-        wip.append(wip_actual)
+        salidas_calc.append(salida)
 
+    # Construir DataFrame de salida
     df_sim = pd.DataFrame({
         "Fecha": dias_fecha,
         "Entradas": entradas,
+        "WIP start (inicio día)": np.round(wip_start, 2),
         "Output Objetivo": np.round(outputs_objetivo, 2),
-        "Salidas": np.round(salidas, 2),
-        "WIP": np.round(wip, 2)
+        "Salidas": np.round(salidas_calc, 2),
+        "WIP end (fin día)": np.round(wip_end, 2)
     })
 
-    # --- ANÁLISIS DE ESTABILIDAD (igual que antes) ---
+    # --- ANÁLISIS DE ESTABILIDAD (usando WIP end) ---
     wip_threshold = 1000
-    wip_np = np.array(wip)
+    wip_np = np.array(wip_end)
     stabilization_point = None
     for i in range(len(wip_np)):
         if wip_np[i] <= wip_threshold and np.all(wip_np[i:] <= wip_threshold):
@@ -373,7 +392,7 @@ elif tab == "Simulación WIP":
         df_sim["Estabilizado"] = False
         df_sim.loc[df_sim.index >= stabilization_point, "Estabilizado"] = True
         estabilidad_fecha = df_sim.loc[stabilization_point, "Fecha"]
-        estabilidad_wip = df_sim.loc[stabilization_point, "WIP"]
+        estabilidad_wip = df_sim.loc[stabilization_point, "WIP end (fin día)"]
     else:
         df_sim["Estabilizado"] = False
 
@@ -383,23 +402,26 @@ elif tab == "Simulación WIP":
 
     st.markdown("## KPIs")
     col1, col2 = st.columns(2)
-    col1.metric("WIP máximo", f"{np.max(wip):.0f}")
-    col2.metric("Días > 1000 WIP", f"{dias_arriba}")
+    col1.metric("WIP máximo (fin de día)", f"{np.max(wip_np):.0f}")
+    col2.metric("Días > 1000 WIP (fin de día)", f"{dias_arriba}")
 
     if stabilization_point is not None:
-        st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} jobs, después de {dias_transicion} días.")
+        st.success(f"WIP se estabiliza ≤ 1000 el {estabilidad_fecha.strftime('%d-%b')} con {int(estabilidad_wip)} jobs (fin de día), después de {dias_transicion} días.")
     else:
-        st.warning("El WIP nunca se estabiliza por debajo de 1000 en el periodo simulado.")
+        st.warning("El WIP nunca se estabiliza por debajo de 1000 en el periodo simulado (fin de día).")
 
-    st.markdown(f"- WIP promedio antes de estabilizarse: **{wip_promedio_pre:.0f}**")
+    st.markdown(f"- WIP promedio (fin de día) antes de estabilizarse: **{wip_promedio_pre:.0f}**")
 
     st.subheader("Evolución diaria de Entradas, Salidas y WIP (Simulación)")
 
     fig = go.Figure()
     fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Entradas"], name="Entradas", marker=dict(color="#2ca02c"), opacity=0.5))
+    # Usamos 'Salidas' calculadas
     fig.add_trace(go.Bar(x=df_sim["Fecha"], y=df_sim["Salidas"], name="Salidas", marker=dict(color="#d62728"), opacity=0.5))
-    fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["WIP"], name="WIP", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
+    # Mostramos WIP end (fin de día) como línea
+    fig.add_trace(go.Scatter(x=df_sim["Fecha"], y=df_sim["WIP end (fin día)"], name="WIP (fin día)", mode="lines+markers", line=dict(width=3, color="#1f77b4")))
 
+    # Bandas y output objetivo
     fig.add_shape(type="rect", xref="x", yref="y",
                   x0=df_sim["Fecha"].iloc[0], y0=wip_threshold, x1=df_sim["Fecha"].iloc[-1], y1=max(wip_np),
                   fillcolor="red", opacity=0.08, layer="below", line_width=0)
@@ -423,16 +445,19 @@ elif tab == "Simulación WIP":
     fig.update_yaxes(range=[0, max(max(wip_np)*1.1, 1500)])
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Tabla de Simulación")
+    st.markdown("### Tabla de Simulación (detalle diario)")
     st.dataframe(df_sim, use_container_width=True)
     st.download_button("Descargar simulación (CSV)", data=df_sim.to_csv(index=False).encode("utf-8"), file_name="simulacion_wip_variable.csv", mime="text/csv")
 
     with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabilidad?"):
         st.markdown(f"""
-        - **Si Turnos == 2:** el Output Objetivo diario se fija según la lista proporcionada por el usuario (valores por fecha).
-        - **Si Turnos != 2:** se mantiene la lógica anterior: 1–3 dic = 600, domingos = 500, resto = turnos × 290 + Entradas×%LT + Entradas×%SURF+CAPA.
-        - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
-        - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
-        - **Estabilidad:** el primer día donde WIP ≤ 1000 y no vuelve a superar 1000
+        - **Si Turnos == 3:** el Output Objetivo diario se fija según la lista proporcionada por el usuario (valores por fecha).
+        - **Si Turnos != 3:** se mantiene la lógica anterior: 1–3 dic = 600, domingos = 500, resto = turnos × 290 + Entradas×%LT + Entradas×%SURF+CAPA.
+        - **WIP (inicio día 1):** lo ingresa el usuario manualmente en el sidebar (no se toma de las entradas).
+        - **Evolución WIP:** para cada día:
+            - WIP_start = WIP_end del día anterior (para el día 1 es el WIP inicial ingresado por el usuario).
+            - Salidas = min(WIP_start + Entradas_del_día, Output Objetivo del día)
+            - WIP_end = WIP_start + Entradas_del_día - Salidas
+        - **Estabilidad:** el primer día (fin de día) donde WIP_end ≤ 1000 y nunca vuelve a superar 1000.
         - **Notas:** cualquier '-' en la lista original fue tratado como 0 para evitar NaNs en la simulación.
         """)
