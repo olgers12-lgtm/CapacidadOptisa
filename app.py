@@ -281,8 +281,9 @@ elif tab == "E&M":
     """, unsafe_allow_html=True)
 
 # ========== BLOQUE Simulación WIP ==========
+# ========== BLOQUE Simulación WIP ==========
 elif tab == "Simulación WIP":
-    st.title("Simulación WIP Variable")
+    st.title("Simulación WIP Variable - Análisis Pro Senior Industrial")
 
     dias = [
         "1-dic","2-dic","3-dic","4-dic","5-dic","6-dic","7-dic","8-dic","9-dic","10-dic","11-dic","12-dic","13-dic","14-dic",
@@ -299,19 +300,30 @@ elif tab == "Simulación WIP":
     dias_en = [traduce_fecha(d) for d in dias]
     dias_fecha = pd.to_datetime(dias_en, format="%d-%b-%Y")
 
+    # Entradas (tal como las tenías anteriormente)
     entradas_raw = [
         905,1355,1382,1363,1514,2106,315,873,942,817,760,797,813,243,880,790,900,662,748,620,99,668,742,623,0,641,400,94
     ]
-    entradas = np.array(entradas_raw)
+    entradas = np.array(entradas_raw, dtype=float)
 
     st.sidebar.header("🔧 Parámetros de Simulación WIP")
-    wip_inicial = st.sidebar.number_input("WIP inicial (1-dic)", min_value=0, value=1200)
+    # WIP inicial por defecto tomado desde la entrada del 1-dic
+    default_wip_initial = int(entradas[0]) if len(entradas) > 0 else 0
+    wip_inicial = st.sidebar.number_input("WIP inicial (1-dic) — por defecto igual a entrada 1-dic", min_value=0, value=default_wip_initial, step=1)
+    st.sidebar.caption(f"Valor por defecto tomado de la Entrada del 01-dic: {default_wip_initial}")
+
     turnos = st.sidebar.number_input("Turnos", min_value=1, max_value=4, value=2)
     cap_ar_por_turno = st.sidebar.number_input("Capacidad AR (cuello botella) por turno de 7h", min_value=1, value=290)
     lt_pct = st.sidebar.slider("Porcentaje de LT (%)", min_value=0.0, max_value=1.0, value=0.30, step=0.01)
     surf_capa_pct = st.sidebar.slider("Porcentaje de SURF+CAPA (%)", min_value=0.0, max_value=1.0, value=0.08, step=0.01)
 
     cap_ar_dia = turnos * cap_ar_por_turno
+
+    # Output fijo para 2 turnos (según lista que proporcionaste)
+    fixed_outputs_for_two_shifts = np.array([
+        900, 900, 1150, 1150, 1150, 1150, 500, 1150, 1150, 1150, 1150, 1150, 1150, 500,
+        870, 840, 877, 798, 826, 784, 0, 800, 824, 785, 0, 631, 612, 587
+    ], dtype=float)
 
     outputs_objetivo = []
     wip = []
@@ -321,12 +333,19 @@ elif tab == "Simulación WIP":
     for i in range(len(dias)):
         entrada = entradas[i]
         fecha_actual = dias_fecha[i]
-        if i in [0,1,2]:
-            output_obj = 600
-        elif fecha_actual.weekday() == 6:  # Domingo es 6
-            output_obj = 500
+
+        # NUEVA LÓGICA: usar fixed_outputs sólo cuando turnos == 2
+        if turnos == 2:
+            output_obj = fixed_outputs_for_two_shifts[i]
         else:
-            output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
+            # cálculo anterior (mantener comportamiento previo para 1 turno u otros)
+            if i in [0,1,2]:
+                output_obj = 600
+            elif fecha_actual.weekday() == 6:  # domingo
+                output_obj = 500
+            else:
+                output_obj = cap_ar_dia + (entrada * lt_pct) + (entrada * surf_capa_pct)
+
         outputs_objetivo.append(output_obj)
         salida = min(wip_actual + entrada, output_obj)
         salidas.append(salida)
@@ -341,6 +360,7 @@ elif tab == "Simulación WIP":
         "WIP": np.round(wip, 2)
     })
 
+    # --- ANÁLISIS DE ESTABILIDAD (igual que antes) ---
     wip_threshold = 1000
     wip_np = np.array(wip)
     stabilization_point = None
@@ -357,7 +377,7 @@ elif tab == "Simulación WIP":
     else:
         df_sim["Estabilizado"] = False
 
-    dias_arriba = np.sum(wip_np > wip_threshold)
+    dias_arriba = int(np.sum(wip_np > wip_threshold))
     dias_transicion = stabilization_point if stabilization_point is not None else len(wip_np)
     wip_promedio_pre = np.mean(wip_np[:dias_transicion]) if dias_transicion > 0 else 0
 
@@ -409,10 +429,10 @@ elif tab == "Simulación WIP":
 
     with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabilidad?"):
         st.markdown(f"""
-        - **Capacidad AR diaria:** turnos × 290 (cuello botella por turno de 7h)
-        - **Output objetivo diario:** los 3 primeros días es 600, domingos es 500, el resto: capacidad AR + (entrada × %LT) + (entrada × %SURF+CAPA)
+        - **Si Turnos == 2:** el Output Objetivo diario se fija según la lista proporcionada por el usuario (valores por fecha).
+        - **Si Turnos != 2:** se mantiene la lógica anterior: 1–3 dic = 600, domingos = 500, resto = turnos × 290 + Entradas×%LT + Entradas×%SURF+CAPA.
         - **WIP:** WIP[i] = WIP[i-1] + Entradas[i] - Salidas[i]
         - **Salidas:** mínimo entre output objetivo y WIP disponible + entradas
-        - **Estabilidad:** el primer día donde WIP ≤ 1000 y nunca vuelve a subir
-        - **KPIs avanzados:** días arriba de 1000, promedio WIP antes de estabilizarse, días hasta estabilidad
+        - **Estabilidad:** el primer día donde WIP ≤ 1000 y no vuelve a superar 1000
+        - **Notas:** cualquier '-' en la lista original fue tratado como 0 para evitar NaNs en la simulación.
         """)
