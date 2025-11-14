@@ -317,7 +317,7 @@ elif tab == "Simulación WIP":
 
     cap_ar_dia = turnos * cap_ar_por_turno
 
-    # Output fijo para 3 turnos (según lista que proporcionaste)
+    # Output fijo para 3 turnos
     fixed_outputs_for_three_shifts = np.array([
         900, 900, 1150, 1150, 1150, 1150, 500, 1150, 1150, 1150, 1150, 1150, 1150, 500,
         870, 840, 877, 798, 826, 784, 0, 800, 824, 785, 0, 631, 612, 587
