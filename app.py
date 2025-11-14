@@ -17,7 +17,7 @@ colA, colB = st.columns(2)
 with colA:
     st.image("https://cdn-icons-png.flaticon.com/512/3103/3103474.png", width=70)
 with colB:
-    st.markdown("<h1 style='margin-top:10px;'>Dashboard de Capacidad Integral</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='margin-top:10px;'>Dashboard de Capacidad</h1>", unsafe_allow_html=True)
 
 tab = st.radio(
     "Selecciona el proceso:", 
