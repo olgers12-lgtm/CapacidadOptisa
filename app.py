@@ -70,10 +70,10 @@ if tab == "SURF (Superficies)":
         stations.append({"name": station["name"], "icon": station["icon"], "color": station["color"], "machines": machines})
 
     st.sidebar.header("📊 Parámetros globales")
-    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.85, step=0.01)
+    line_oee = st.sidebar.slider("OEE de la línea", min_value=0.5, max_value=1.0, value=0.80, step=0.01)
     num_turnos = st.sidebar.number_input("Número de turnos", min_value=1, max_value=4, value=3)
-    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=8)
-    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.05, step=0.01)
+    horas_turno = st.sidebar.number_input("Horas por turno", min_value=4, max_value=12, value=7)
+    scrap_rate = st.sidebar.slider("Tasa de scrap (%)", min_value=0.0, max_value=0.2, value=0.00, step=0.01)
 
     st.sidebar.header("📂 Importar datos reales")
     uploaded_file = st.sidebar.file_uploader("Cargar archivo Excel/CSV (opcional)", type=["xlsx", "csv"])
