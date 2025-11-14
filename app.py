@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 
-st.set_page_config(page_title="🚀 Dashboard de Capacidad Integral y Simulación WIP", layout="wide")
+st.set_page_config(page_title="🚀 Dashboard de Capacidad y Simulación WIP", layout="wide")
 st.markdown("""
 <style>
 h1, h2, h3, h4 { color: #003366; }
@@ -150,7 +150,7 @@ if tab == "SURF (Superficies)":
         - **Capacidad hora (teórica):** ∑ (máquinas × capacidad) por estación × OEE de la línea ({line_oee:.2f}).
         - **Capacidad diaria (real):** Capacidad hora × número de turnos × horas por turno × (1 - scrap).
         - **Cuello de botella:** Estación con menor capacidad diaria.
-        - Puedes importar datos reales y ajustar todos los parámetros para simular escenarios de mejora industrial.
+        
         """)
 
     st.markdown("""
