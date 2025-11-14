@@ -452,9 +452,9 @@ elif tab == "Simulación WIP":
     with st.expander("¿Cómo se calcula el output objetivo y el análisis de estabilidad?"):
         st.markdown(f"""
       
-        - **WIP (inicio día 1):** lo ingresa el usuario manualmente
+        - **WIP (inicio día 1):** se ingresa de forma manual
         - **Evolución WIP:** para cada día:
-            - WIP_start = WIP_end del día anterior (para el día 1 es el WIP inicial ingresado por el usuario).
+            - WIP_start = WIP_end del día anterior (para el día 1 es el WIP inicial ingresado).
             - Salidas = min(WIP_start + Entradas_del_día, Output Objetivo del día)
             - WIP_end = WIP_start + Entradas_del_día - Salidas
         - **Estabilidad:** el primer día (fin de día) donde WIP ≤ 1000 y nunca vuelve a superar 1000.
